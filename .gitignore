@@ -1,0 +1,75 @@
+# ─── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# ─── Virtual Environments ─────────────────────────────────
+.venv/
+venv/
+ENV/
+
+# ─── Testing ──────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# ─── Type Checking ────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ─── Linting ──────────────────────────────────────────────
+.ruff_cache/
+
+# ─── IDE ──────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# ─── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── Docker ───────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Environment ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Node (Dashboard UI) ──────────────────────────────────
+node_modules/
+ui/dashboard/dist/
+ui/dashboard/.cache/
+.pnpm-store/
+
+# ─── Database ─────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ─── Secrets (never commit) ───────────────────────────────
+*.pem
+*.key
+secrets/
+
+# ─── Build artifacts ──────────────────────────────────────
+*.tar.gz
+*.zip
