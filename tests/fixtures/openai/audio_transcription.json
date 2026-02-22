@@ -1,0 +1,6 @@
+{
+    "text": "Hello, this is a test transcription.",
+    "task": "transcribe",
+    "language": "en",
+    "duration": 2.5
+}
