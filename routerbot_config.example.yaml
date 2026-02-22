@@ -1,0 +1,73 @@
+# RouterBot Configuration
+# See docs/ARCHITECTURE.md for full reference.
+
+# ─── Model Deployments ─────────────────────────────────────
+# Each entry defines a virtual model name and its provider configuration.
+model_list:
+  - model_name: gpt-4o
+    provider_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+
+  - model_name: gpt-4o-mini
+    provider_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000006
+
+  # - model_name: claude-sonnet
+  #   provider_params:
+  #     model: anthropic/claude-sonnet-4-20250514
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+
+  # - model_name: gemini-pro
+  #   provider_params:
+  #     model: gemini/gemini-1.5-pro
+  #     api_key: os.environ/GEMINI_API_KEY
+
+# ─── General Settings ──────────────────────────────────────
+general_settings:
+  master_key: os.environ/ROUTERBOT_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  redis_url: os.environ/REDIS_URL
+  port: 4000
+  host: "0.0.0.0"
+  num_workers: 1
+  request_timeout: 600
+  log_level: INFO
+  log_format: json
+
+# ─── Router Settings ──────────────────────────────────────
+router_settings:
+  routing_strategy: round-robin
+  num_retries: 3
+  retry_delay: 1.0
+  timeout: 600
+  cooldown_time: 60
+  fallbacks:
+    gpt-4o:
+      - gpt-4o-mini
+  enable_health_check: true
+  health_check_interval: 300
+
+# ─── RouterBot Settings ───────────────────────────────────
+routerbot_settings:
+  callbacks: []
+  cache: false
+  cache_params:
+    type: none
+
+# ─── Environment Variables ─────────────────────────────────
+# These will be set in the process environment on startup.
+# environment_variables:
+#   LANGFUSE_PUBLIC_KEY: "pk-..."
+#   LANGFUSE_SECRET_KEY: "sk-..."
