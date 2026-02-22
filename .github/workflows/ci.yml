@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  UV_CACHE_DIR: /tmp/.uv-cache
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: MyPy
+        run: uv run python -m mypy src/routerbot/
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run unit tests
+        run: |
+          uv run python -m pytest tests/unit/ \
+            -v \
+            --tb=short \
+            --cov=routerbot \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --timeout=60
+
+      - name: Upload coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  circular-imports:
+    name: Circular Import Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Check for circular imports
+        run: |
+          uv run python -c "
+          import importlib
+          import pkgutil
+          import routerbot
+
+          errors = []
+          for importer, name, is_pkg in pkgutil.walk_packages(
+              routerbot.__path__, prefix='routerbot.'
+          ):
+              try:
+                  importlib.import_module(name)
+              except ImportError as e:
+                  errors.append(f'{name}: {e}')
+
+          if errors:
+              print('Circular import errors found:')
+              for e in errors:
+                  print(f'  - {e}')
+              raise SystemExit(1)
+          else:
+              print(f'All modules imported successfully')
+          "
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: pip-audit
+        run: uv run pip-audit --strict --desc
+        continue-on-error: true  # Advisory — don't block CI on upstream vulnerabilities
+
+  all-checks:
+    name: All Checks Passed
+    if: always()
+    needs: [lint, type-check, test, circular-imports]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.type-check.result }}" != "success" ]] || \
+             [[ "${{ needs.test.result }}" != "success" ]] || \
+             [[ "${{ needs.circular-imports.result }}" != "success" ]]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed!"
