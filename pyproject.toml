@@ -54,7 +54,7 @@ proxy = [
 ]
 dev = [
     "pytest>=8.0,<9",
-    "pytest-asyncio>=0.23,<1",
+    "pytest-asyncio>=0.23,<2",
     "pytest-cov>=5.0,<6",
     "pytest-xdist>=3.5,<4",
     "pytest-timeout>=2.2,<3",
