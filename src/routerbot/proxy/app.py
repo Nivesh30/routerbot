@@ -1,0 +1,222 @@
+"""FastAPI application factory for RouterBot.
+
+Usage::
+
+    from routerbot.proxy.app import create_app
+
+    app = create_app()  # uses default config
+    # or
+    app = create_app(config=my_config)
+
+The application is intentionally kept thin here — routes, middleware,
+and the router layer are registered in separate modules.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+import uuid
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, Any
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from routerbot.core.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    ModelNotFoundError,
+    ProviderError,
+    RateLimitError,
+    RouterBotError,
+    ServiceUnavailableError,
+)
+from routerbot.proxy.error_handlers import (
+    authentication_error_handler,
+    bad_request_handler,
+    model_not_found_handler,
+    provider_error_handler,
+    rate_limit_error_handler,
+    routerbot_error_handler,
+    service_unavailable_handler,
+    unhandled_exception_handler,
+)
+from routerbot.proxy.state import AppState
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from routerbot.core.config_models import RouterBotConfig
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Application factory
+# ---------------------------------------------------------------------------
+
+
+def create_app(config: RouterBotConfig | None = None) -> FastAPI:
+    """Create and configure the RouterBot FastAPI application.
+
+    Parameters
+    ----------
+    config:
+        Optional pre-loaded :class:`~routerbot.core.config_models.RouterBotConfig`.
+        If not provided, the app will attempt to load from the config file
+        at startup (via the ``ROUTERBOT_CONFIG`` environment variable or
+        a default path).
+
+    Returns
+    -------
+    FastAPI
+        The configured FastAPI application.
+    """
+    state = AppState()
+    if config is not None:
+        state.config = config
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        """Manage application startup and shutdown."""
+        await _startup(app, state, config)
+        yield
+        await _shutdown(app, state)
+
+    app = FastAPI(
+        title="RouterBot",
+        description="Open Source LLM Gateway — unified OpenAI-compatible API for 100+ models.",
+        version="0.1.0",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+        lifespan=lifespan,
+    )
+
+    # Store state on the app
+    app.state.routerbot = state
+
+    # -----------------------------------------------------------------
+    # CORS
+    # -----------------------------------------------------------------
+    cors_origins = ["*"]
+    cors_credentials = True
+    if config and config.general_settings:
+        cors_origins = config.general_settings.cors_allow_origins
+        cors_credentials = config.general_settings.cors_allow_credentials
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=cors_credentials,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # -----------------------------------------------------------------
+    # Request ID middleware
+    # -----------------------------------------------------------------
+    @app.middleware("http")
+    async def add_request_id(request: Request, call_next: Any) -> Any:
+        request_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:16]}"
+        request.state.request_id = request_id
+        start_time = time.perf_counter()
+        response = await call_next(request)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.1f}"
+        return response
+
+    # -----------------------------------------------------------------
+    # Exception handlers (registered most-specific first)
+    # -----------------------------------------------------------------
+    app.add_exception_handler(ModelNotFoundError, model_not_found_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(AuthenticationError, authentication_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RateLimitError, rate_limit_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(BadRequestError, bad_request_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(ServiceUnavailableError, service_unavailable_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(ProviderError, provider_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RouterBotError, routerbot_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, unhandled_exception_handler)
+
+    # -----------------------------------------------------------------
+    # Routes
+    # -----------------------------------------------------------------
+    _register_routes(app)
+
+    return app
+
+
+# ---------------------------------------------------------------------------
+# Startup / Shutdown hooks
+# ---------------------------------------------------------------------------
+
+
+async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None) -> None:
+    """Initialize providers, DB, and Redis on application startup."""
+    logger.info("RouterBot starting up…")
+
+    if config is None and state.config is None:
+        # Attempt to load config from standard locations
+        try:
+            from routerbot.core.config import load_config
+
+            loaded = load_config()
+            state.config = loaded
+            logger.info("Loaded config from default location")
+        except Exception as exc:
+            logger.warning("Could not load config file: %s — running with defaults", exc)
+            from routerbot.core.config_models import RouterBotConfig
+
+            state.config = RouterBotConfig()
+
+    app.state.routerbot = state
+    logger.info("RouterBot ready ✓")
+
+
+async def _shutdown(app: FastAPI, state: AppState) -> None:
+    """Clean up resources on application shutdown."""
+    logger.info("RouterBot shutting down…")
+
+    # Close any open Redis connections
+    if state.redis is not None:
+        import contextlib
+
+        with contextlib.suppress(Exception):
+            await state.redis.aclose()
+
+    logger.info("RouterBot shutdown complete ✓")
+
+
+# ---------------------------------------------------------------------------
+# Route registration
+# ---------------------------------------------------------------------------
+
+
+def _register_routes(app: FastAPI) -> None:
+    """Register all route modules on the application."""
+    from routerbot.proxy.routes.health import router as health_router
+    from routerbot.proxy.routes.models import router as models_router
+
+    app.include_router(health_router)
+    app.include_router(models_router, prefix="/v1")
+
+    # Register an OpenAI-compatible models fallback at root too
+    @app.get("/", include_in_schema=False)
+    async def root() -> JSONResponse:
+        return JSONResponse(
+            content={
+                "name": "RouterBot",
+                "version": "0.1.0",
+                "description": "Open Source LLM Gateway",
+                "status": "running",
+            }
+        )
+
+
+# ---------------------------------------------------------------------------
+# Default app instance (for development only — use create_app() in production)
+# ---------------------------------------------------------------------------
+
+app = create_app()
