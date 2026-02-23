@@ -1,0 +1,23 @@
+{
+  "id": "coh-test-abc-123",
+  "finish_reason": "COMPLETE",
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Hello from Cohere!"
+      }
+    ]
+  },
+  "usage": {
+    "billed_units": {
+      "input_tokens": 6,
+      "output_tokens": 8
+    },
+    "tokens": {
+      "input_tokens": 6,
+      "output_tokens": 8
+    }
+  }
+}
