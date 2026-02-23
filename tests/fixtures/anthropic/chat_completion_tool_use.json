@@ -1,0 +1,27 @@
+{
+    "id": "msg_01AbcDef2GhiJklMnoPqrStu",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-5-sonnet-20241022",
+    "content": [
+        {
+            "type": "text",
+            "text": "I'll look up the weather for you."
+        },
+        {
+            "type": "tool_use",
+            "id": "toolu_01AbcDef2GhiJklMno",
+            "name": "get_weather",
+            "input": {
+                "location": "San Francisco, CA",
+                "unit": "celsius"
+            }
+        }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+        "input_tokens": 35,
+        "output_tokens": 48
+    }
+}
