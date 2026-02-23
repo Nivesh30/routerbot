@@ -196,10 +196,25 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
 
 def _register_routes(app: FastAPI) -> None:
     """Register all route modules on the application."""
+    from routerbot.proxy.routes.audio import router as audio_router
+    from routerbot.proxy.routes.batches import router as batches_router
+    from routerbot.proxy.routes.completions import router as completions_router
+    from routerbot.proxy.routes.embeddings import router as embeddings_router
     from routerbot.proxy.routes.health import router as health_router
+    from routerbot.proxy.routes.images import router as images_router
     from routerbot.proxy.routes.models import router as models_router
+    from routerbot.proxy.routes.rerank import router as rerank_router
 
+    # Health routes (no prefix — /health, /health/liveness, /health/readiness)
     app.include_router(health_router)
+
+    # All v1 API routes
+    app.include_router(completions_router, prefix="/v1")
+    app.include_router(embeddings_router, prefix="/v1")
+    app.include_router(images_router, prefix="/v1")
+    app.include_router(audio_router, prefix="/v1")
+    app.include_router(rerank_router, prefix="/v1")
+    app.include_router(batches_router, prefix="/v1")
     app.include_router(models_router, prefix="/v1")
 
     # Register an OpenAI-compatible models fallback at root too
