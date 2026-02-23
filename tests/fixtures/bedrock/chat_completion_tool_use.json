@@ -1,0 +1,31 @@
+{
+    "output": {
+        "message": {
+            "role": "assistant",
+            "content": [
+                {
+                    "text": "I'll look up the weather for you."
+                },
+                {
+                    "toolUse": {
+                        "toolUseId": "tooluse_abc12345678901234567890",
+                        "name": "get_weather",
+                        "input": {
+                            "location": "San Francisco, CA",
+                            "unit": "celsius"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "stopReason": "tool_use",
+    "usage": {
+        "inputTokens": 35,
+        "outputTokens": 48,
+        "totalTokens": 83
+    },
+    "metrics": {
+        "latencyMs": 720
+    }
+}
