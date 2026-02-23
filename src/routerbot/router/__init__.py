@@ -1,4 +1,22 @@
-"""Router layer — retry, fallback, health check, and routing logic.
+"""RouterBot router package.
 
-Depends on core/ and providers/ only. No DB, no HTTP framework.
+The router sits between the HTTP proxy layer and the provider adapters.
+It provides:
+
+- Model-name → deployment resolution
+- Load balancing (round-robin, least-connections, latency-based, cost-based, weighted)
+- Retry with exponential backoff
+- Fallback chains
+- Cooldown management for failing deployments
+
+Typical usage::
+
+    from routerbot.router.router import Router
+
+    router = Router(config=loaded_config)
+    response = await router.chat_completion(request)
 """
+
+from routerbot.router.router import Deployment, Router
+
+__all__ = ["Deployment", "Router"]
