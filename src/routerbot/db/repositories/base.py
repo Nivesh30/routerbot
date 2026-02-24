@@ -71,6 +71,11 @@ class BaseRepository(Generic[T]):
     async def update(self, entity: T, **kwargs: Any) -> T:
         """Update an existing entity's attributes.
 
+        After flushing, the entity is refreshed so that server-side
+        defaults (e.g. ``onupdate=func.now()``) are eagerly loaded in
+        the async context — preventing ``MissingGreenlet`` errors on
+        subsequent attribute access.
+
         Returns
         -------
         T
@@ -79,6 +84,7 @@ class BaseRepository(Generic[T]):
         for key, value in kwargs.items():
             setattr(entity, key, value)
         await self._session.flush()
+        await self._session.refresh(entity)
         return entity
 
     async def delete(self, entity: T) -> None:
