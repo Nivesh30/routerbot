@@ -247,6 +247,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.keys import router as keys_router
     from routerbot.proxy.routes.models import router as models_router
     from routerbot.proxy.routes.rerank import router as rerank_router
+    from routerbot.proxy.routes.sso import router as sso_router
 
     # Health routes (no prefix — /health, /health/liveness, /health/readiness)
     app.include_router(health_router)
@@ -256,6 +257,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Key management routes
     app.include_router(keys_router)
+
+    # SSO routes
+    app.include_router(sso_router)
 
     # All v1 API routes
     app.include_router(completions_router, prefix="/v1")
