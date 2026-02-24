@@ -98,8 +98,10 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
     app.state.routerbot = state
 
     # -----------------------------------------------------------------
-    # CORS
+    # Middleware stack (outermost first ← LIFO registration order)
     # -----------------------------------------------------------------
+
+    # CORS
     cors_origins = ["*"]
     cors_credentials = True
     if config and config.general_settings:
@@ -114,9 +116,30 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # -----------------------------------------------------------------
-    # Request ID middleware
-    # -----------------------------------------------------------------
+    # Robots.txt (before request logging so crawl probes are handled early)
+    block_robots = False
+    if config and config.general_settings:
+        block_robots = config.general_settings.block_robots
+
+    from routerbot.proxy.middleware.robots import RobotsTxtMiddleware
+
+    app.add_middleware(RobotsTxtMiddleware, enabled=block_robots)
+
+    # Request body size limit
+    max_mb = 100.0
+    if config and config.general_settings:
+        max_mb = config.general_settings.max_request_size_mb
+
+    from routerbot.proxy.middleware.size_limit import RequestSizeLimitMiddleware
+
+    app.add_middleware(RequestSizeLimitMiddleware, max_request_body_mb=max_mb)
+
+    # Structured request logging
+    from routerbot.proxy.middleware.logging_mw import RequestLoggingMiddleware
+
+    app.add_middleware(RequestLoggingMiddleware)
+
+    # Request ID + response time (innermost — runs first on request, last on response)
     @app.middleware("http")
     async def add_request_id(request: Request, call_next: Any) -> Any:
         request_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:16]}"
@@ -145,6 +168,13 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
     # -----------------------------------------------------------------
     _register_routes(app)
 
+    # -----------------------------------------------------------------
+    # OpenAPI customization
+    # -----------------------------------------------------------------
+    from routerbot.proxy.openapi import configure_openapi
+
+    configure_openapi(app)
+
     return app
 
 
@@ -171,6 +201,12 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
 
             state.config = RouterBotConfig()
 
+    # Initialise the router layer
+    from routerbot.router.router import Router
+
+    state.router = Router(config=state.config)
+    logger.info("Router initialised with %d model(s)", len(state.router.list_models()))
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -178,6 +214,11 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
 async def _shutdown(app: FastAPI, state: AppState) -> None:
     """Clean up resources on application shutdown."""
     logger.info("RouterBot shutting down…")
+
+    # Stop config watcher if running
+    config_watcher = getattr(state, "config_watcher", None)
+    if config_watcher is not None:
+        await config_watcher.stop()
 
     # Close any open Redis connections
     if state.redis is not None:
@@ -199,6 +240,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.audio import router as audio_router
     from routerbot.proxy.routes.batches import router as batches_router
     from routerbot.proxy.routes.completions import router as completions_router
+    from routerbot.proxy.routes.config import router as config_router
     from routerbot.proxy.routes.embeddings import router as embeddings_router
     from routerbot.proxy.routes.health import router as health_router
     from routerbot.proxy.routes.images import router as images_router
@@ -207,6 +249,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Health routes (no prefix — /health, /health/liveness, /health/readiness)
     app.include_router(health_router)
+
+    # Config management routes
+    app.include_router(config_router)
 
     # All v1 API routes
     app.include_router(completions_router, prefix="/v1")

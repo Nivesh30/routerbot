@@ -169,6 +169,8 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    # Windows ProactorEventLoop: orphaned transport/socket __del__ warnings
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 
 [tool.coverage.run]
