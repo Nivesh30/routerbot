@@ -9,8 +9,13 @@ from routerbot.auth.api_key import (
     hash_key,
     validate_key,
 )
+from routerbot.auth.jwt import JWTAuthenticator, JWTAuthError, JWTClaims, JWTConfig
 
 __all__ = [
+    "JWTAuthError",
+    "JWTAuthenticator",
+    "JWTClaims",
+    "JWTConfig",
     "KeyValidationResult",
     "generate_key",
     "hash_key",
