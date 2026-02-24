@@ -139,6 +139,24 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
 
     app.add_middleware(RequestLoggingMiddleware)
 
+    # IP-based access control (before auth — reject early)
+    allowed_ips: list[str] = []
+    blocked_ips: list[str] = []
+    trust_proxy_headers = False
+    if config and config.general_settings:
+        allowed_ips = config.general_settings.allowed_ips
+        blocked_ips = config.general_settings.blocked_ips
+        trust_proxy_headers = config.general_settings.trust_proxy_headers
+
+    from routerbot.proxy.middleware.ip_filter import IPFilterMiddleware
+
+    app.add_middleware(
+        IPFilterMiddleware,
+        allowed_ips=allowed_ips,
+        blocked_ips=blocked_ips,
+        trust_proxy_headers=trust_proxy_headers,
+    )
+
     # Authentication (resolves AuthContext from Bearer tokens / SSO cookies)
     from routerbot.proxy.middleware.auth import AuthMiddleware
 
