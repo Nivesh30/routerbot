@@ -139,6 +139,11 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
 
     app.add_middleware(RequestLoggingMiddleware)
 
+    # Authentication (resolves AuthContext from Bearer tokens / SSO cookies)
+    from routerbot.proxy.middleware.auth import AuthMiddleware
+
+    app.add_middleware(AuthMiddleware)
+
     # Request ID + response time (innermost — runs first on request, last on response)
     @app.middleware("http")
     async def add_request_id(request: Request, call_next: Any) -> Any:
