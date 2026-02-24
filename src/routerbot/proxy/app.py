@@ -269,6 +269,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.health import router as health_router
     from routerbot.proxy.routes.images import router as images_router
     from routerbot.proxy.routes.keys import router as keys_router
+    from routerbot.proxy.routes.metrics import router as metrics_router
     from routerbot.proxy.routes.models import router as models_router
     from routerbot.proxy.routes.rerank import router as rerank_router
     from routerbot.proxy.routes.spend import router as spend_router
@@ -299,6 +300,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Audit logging routes
     app.include_router(audit_router)
+
+    # Prometheus metrics endpoint
+    app.include_router(metrics_router)
 
     # All v1 API routes
     app.include_router(completions_router, prefix="/v1")
