@@ -96,6 +96,9 @@ class GeneralSettings(BaseModel):
     block_robots: bool = Field(default=False, description="Return disallow-all robots.txt")
     log_level: str = Field(default="INFO", description="Logging level")
     log_format: str = Field(default="json", description="Log format: json or text")
+    allowed_ips: list[str] = Field(default_factory=list, description="IP/CIDR allowlist (empty = allow all)")
+    blocked_ips: list[str] = Field(default_factory=list, description="IP/CIDR blocklist")
+    trust_proxy_headers: bool = Field(default=False, description="Trust X-Forwarded-For for client IP")
 
 
 class RouterSettings(BaseModel):
