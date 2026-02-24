@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from routerbot.db.models import AuditLog
 
@@ -83,6 +83,67 @@ class AuditRepository(BaseRepository[AuditLog]):
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_filtered(
+        self,
+        *,
+        actor_id: uuid.UUID | None = None,
+        action: str | None = None,
+        target_type: str | None = None,
+        target_id: uuid.UUID | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> list[AuditLog]:
+        """Return audit logs matching **all** supplied filters.
+
+        Filters are combined with AND.  Any filter set to ``None`` is
+        ignored so callers can pass only the filters they care about.
+        """
+        stmt = select(AuditLog)
+        if actor_id is not None:
+            stmt = stmt.where(AuditLog.actor_id == actor_id)
+        if action is not None:
+            stmt = stmt.where(AuditLog.action == action)
+        if target_type is not None:
+            stmt = stmt.where(AuditLog.target_type == target_type)
+        if target_id is not None:
+            stmt = stmt.where(AuditLog.target_id == target_id)
+        if start is not None:
+            stmt = stmt.where(AuditLog.created_at >= start)
+        if end is not None:
+            stmt = stmt.where(AuditLog.created_at <= end)
+        stmt = stmt.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def count_filtered(
+        self,
+        *,
+        actor_id: uuid.UUID | None = None,
+        action: str | None = None,
+        target_type: str | None = None,
+        target_id: uuid.UUID | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> int:
+        """Return total count of audit logs matching filters."""
+        stmt = select(func.count(AuditLog.id))
+        if actor_id is not None:
+            stmt = stmt.where(AuditLog.actor_id == actor_id)
+        if action is not None:
+            stmt = stmt.where(AuditLog.action == action)
+        if target_type is not None:
+            stmt = stmt.where(AuditLog.target_type == target_type)
+        if target_id is not None:
+            stmt = stmt.where(AuditLog.target_id == target_id)
+        if start is not None:
+            stmt = stmt.where(AuditLog.created_at >= start)
+        if end is not None:
+            stmt = stmt.where(AuditLog.created_at <= end)
+        result = await self._session.execute(stmt)
+        return int(result.scalar_one())
 
     # ------------------------------------------------------------------
     # Retention
