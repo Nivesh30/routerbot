@@ -243,6 +243,7 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
 def _register_routes(app: FastAPI) -> None:
     """Register all route modules on the application."""
     from routerbot.proxy.routes.audio import router as audio_router
+    from routerbot.proxy.routes.audit import router as audit_router
     from routerbot.proxy.routes.batches import router as batches_router
     from routerbot.proxy.routes.completions import router as completions_router
     from routerbot.proxy.routes.config import router as config_router
@@ -277,6 +278,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Spend tracking routes
     app.include_router(spend_router)
+
+    # Audit logging routes
+    app.include_router(audit_router)
 
     # All v1 API routes
     app.include_router(completions_router, prefix="/v1")
