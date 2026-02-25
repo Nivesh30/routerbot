@@ -127,19 +127,44 @@ export interface HealthStatus {
 }
 
 export interface DashboardMetrics {
-  total_requests_24h: number;
-  total_spend_24h: number;
+  period: string;
+  period_start: string;
+  period_end: string;
+
+  // KPIs
+  total_requests: number;
+  total_spend: number;
+  total_tokens: number;
   active_keys: number;
   active_models: number;
+  active_teams: number;
+  active_users: number;
   error_rate: number;
-  requests_over_time: TimeSeriesPoint[];
-  spend_by_model: Record<string, number>;
+
+  // Latency
   latency_p50: number;
   latency_p95: number;
   latency_p99: number;
+
+  // Breakdowns
+  spend_by_model: Record<string, number>;
+  requests_by_model: Record<string, number>;
   top_models: Array<{ model: string; requests: number; spend: number }>;
-  recent_errors: Array<{ timestamp: string; model: string; error: string }>;
-  provider_health: Record<string, { status: string; latency_ms: number }>;
+
+  // Time series
+  time_series: Array<{
+    timestamp: string;
+    requests: number;
+    spend: number;
+    tokens: number;
+  }>;
+
+  // Health
+  provider_health: Record<string, { status: string; value: number }>;
+  uptime_seconds: number;
+
+  // Errors
+  recent_errors: Array<{ model: string; error_count: string; timestamp: string }>;
 }
 
 export interface TimeSeriesPoint {
