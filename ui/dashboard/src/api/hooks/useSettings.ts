@@ -4,19 +4,18 @@ import { api } from "../client";
 import { endpoints } from "../endpoints";
 import type { AuditEntry, PaginatedResponse, SSOProvider } from "../types";
 
-export function useSettings() {
+export function useConfig() {
   return useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.get<Record<string, unknown>>(endpoints.settings),
+    queryKey: ["config"],
+    queryFn: () => api.get<Record<string, unknown>>(endpoints.config),
   });
 }
 
-export function useUpdateSettings() {
+export function useReloadConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      api.put(endpoints.settings, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
+    mutationFn: () => api.post(endpoints.configReload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["config"] }),
   });
 }
 

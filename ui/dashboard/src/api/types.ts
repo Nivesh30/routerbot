@@ -1,5 +1,15 @@
 /* API type definitions matching RouterBot backend models */
 
+export interface AuthInfo {
+  authenticated: boolean;
+  user_id: string | null;
+  email: string | null;
+  team_id: string | null;
+  role: string;
+  auth_method: string;
+  permissions: string[];
+}
+
 export interface Model {
   id: string;
   model_name: string;

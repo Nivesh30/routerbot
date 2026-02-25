@@ -36,6 +36,7 @@ _PUBLIC_PATHS: frozenset[str] = frozenset({
     "/sso/callback",
     "/sso/providers",
     "/sso/logout",
+    "/auth/login",
     "/metrics",
 })
 

@@ -1,4 +1,4 @@
-import { LogOut, Menu, Moon, Sun } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, User } from "lucide-react";
 
 import { useTheme } from "../../hooks/useTheme";
 import { useAuthStore } from "../../stores/authStore";
@@ -11,6 +11,8 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const logout = useAuthStore((s) => s.logout);
   const role = useAuthStore((s) => s.role);
+  const userId = useAuthStore((s) => s.userId);
+  const email = useAuthStore((s) => s.email);
 
   const cycleTheme = () => {
     const order: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
@@ -18,11 +20,14 @@ export function Header({ onToggleSidebar }: HeaderProps) {
     setTheme(order[(idx + 1) % order.length]);
   };
 
+  const displayName = email ?? userId ?? "User";
+
   return (
     <header className="flex h-14 items-center justify-between border-b border-surface-200 bg-white px-4 dark:border-surface-700 dark:bg-surface-900">
       <button
         onClick={onToggleSidebar}
         className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
+        aria-label="Toggle sidebar"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -39,6 +44,16 @@ export function Header({ onToggleSidebar }: HeaderProps) {
             <Sun className="h-5 w-5" />
           )}
         </button>
+
+        {/* User info */}
+        <div className="hidden items-center gap-2 sm:flex">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-200 dark:bg-surface-700">
+            <User className="h-3.5 w-3.5 text-surface-600 dark:text-surface-300" />
+          </div>
+          <span className="max-w-[140px] truncate text-xs text-surface-600 dark:text-surface-400">
+            {displayName}
+          </span>
+        </div>
 
         {role && (
           <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">

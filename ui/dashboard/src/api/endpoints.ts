@@ -1,46 +1,58 @@
 export const endpoints = {
   // Auth
   login: "/auth/login",
+  me: "/auth/me",
   ssoProviders: "/sso/providers",
-  ssoLogin: (provider: string) => `/sso/${provider}/login`,
+  ssoLogin: (provider: string) => `/sso/login?provider=${provider}`,
+  ssoLogout: "/sso/logout",
 
   // Health
   health: "/health",
 
-  // Models
+  // Config
+  config: "/config",
+  configReload: "/config/reload",
+
+  // Models (OpenAI-compatible)
   models: "/v1/models",
   model: (id: string) => `/v1/models/${id}`,
-  modelTest: (id: string) => `/v1/models/${id}/test`,
 
-  // Keys
-  keys: "/v1/keys",
-  key: (id: string) => `/v1/keys/${id}`,
-  keyGenerate: "/v1/keys/generate",
-  keyRotate: (id: string) => `/v1/keys/${id}/rotate`,
+  // Keys (backend uses /key/ prefix)
+  keyGenerate: "/key/generate",
+  keyUpdate: "/key/update",
+  keyDelete: "/key/delete",
+  keyInfo: "/key/info",
+  keyList: "/key/list",
+  keyRotate: "/key/rotate",
 
   // Teams
-  teams: "/v1/teams",
-  team: (id: string) => `/v1/teams/${id}`,
-  teamMembers: (id: string) => `/v1/teams/${id}/members`,
+  teamNew: "/team/new",
+  teamUpdate: "/team/update",
+  teamDelete: "/team/delete",
+  teamList: "/team/list",
+  teamInfo: (id: string) => `/team/info?team_id=${id}`,
+  teamMemberAdd: "/team/member/add",
+  teamMemberRemove: "/team/member/remove",
 
   // Users
-  users: "/v1/users",
-  user: (id: string) => `/v1/users/${id}`,
+  userNew: "/user/new",
+  userUpdate: "/user/update",
+  userDelete: "/user/delete",
+  userInfo: (id: string) => `/user/info?user_id=${id}`,
+  userList: "/user/list",
 
   // Spend
-  spend: "/v1/spend",
-  spendLogs: "/v1/spend/logs",
-  spendSummary: "/v1/spend/summary",
-  spendExport: "/v1/spend/export",
+  spendLogs: "/spend/logs",
+  spendReport: "/spend/report",
+  spendKeys: "/spend/keys",
 
-  // Guardrails
-  guardrails: "/v1/guardrails",
-  guardrail: (id: string) => `/v1/guardrails/${id}`,
+  // Guardrails (config-based, not REST)
+  configGuardrails: "/config",
 
-  // Settings
-  settings: "/v1/settings",
-  auditLogs: "/v1/audit/logs",
+  // Audit
+  auditLogs: "/audit/logs",
+  auditLog: (id: string) => `/audit/logs/${id}`,
 
-  // Dashboard
-  dashboard: "/v1/dashboard/metrics",
+  // Dashboard metrics (health + config combined)
+  dashboard: "/health",
 } as const;

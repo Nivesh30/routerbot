@@ -52,6 +52,14 @@ async function request<T>(
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
+
+    // Auto-logout on 401 (except for login endpoint)
+    if (response.status === 401 && !endpoint.includes("/auth/login")) {
+      localStorage.removeItem("routerbot_token");
+      // Force a page reload to trigger the login redirect
+      window.location.href = "/login";
+    }
+
     throw new ApiError(response.status, response.statusText, data);
   }
 
