@@ -55,4 +55,5 @@ export const endpoints = {
 
   // Dashboard metrics (health + config combined)
   dashboard: "/health",
+  dashboardStats: "/dashboard/stats",
 } as const;

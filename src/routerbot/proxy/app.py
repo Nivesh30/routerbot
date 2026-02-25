@@ -266,6 +266,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.batches import router as batches_router
     from routerbot.proxy.routes.completions import router as completions_router
     from routerbot.proxy.routes.config import router as config_router
+    from routerbot.proxy.routes.dashboard import router as dashboard_router
     from routerbot.proxy.routes.embeddings import router as embeddings_router
     from routerbot.proxy.routes.health import router as health_router
     from routerbot.proxy.routes.images import router as images_router
@@ -301,6 +302,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Spend tracking routes
     app.include_router(spend_router)
+
+    # Dashboard stats
+    app.include_router(dashboard_router)
 
     # Audit logging routes
     app.include_router(audit_router)
