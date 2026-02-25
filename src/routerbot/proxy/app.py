@@ -262,6 +262,7 @@ def _register_routes(app: FastAPI) -> None:
     """Register all route modules on the application."""
     from routerbot.proxy.routes.audio import router as audio_router
     from routerbot.proxy.routes.audit import router as audit_router
+    from routerbot.proxy.routes.auth import router as auth_router
     from routerbot.proxy.routes.batches import router as batches_router
     from routerbot.proxy.routes.completions import router as completions_router
     from routerbot.proxy.routes.config import router as config_router
@@ -279,6 +280,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Health routes (no prefix — /health, /health/liveness, /health/readiness)
     app.include_router(health_router)
+
+    # Auth routes (login, me)
+    app.include_router(auth_router)
 
     # Config management routes
     app.include_router(config_router)

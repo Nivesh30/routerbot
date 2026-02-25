@@ -23,6 +23,34 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      "/key": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/team": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/user": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/spend": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/audit": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/config": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/metrics": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
   },
   build: {
@@ -40,7 +68,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: "jsdom",
+    environment: "happy-dom",
     setupFiles: ["./src/test/setup.ts"],
     css: true,
   },
