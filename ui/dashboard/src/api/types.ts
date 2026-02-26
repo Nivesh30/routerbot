@@ -79,25 +79,64 @@ export interface ModelTestResult {
 export interface VirtualKey {
   id: string;
   key_prefix: string;
-  key_name: string;
-  team_id?: string;
-  user_id?: string;
+  user_id: string | null;
+  team_id: string | null;
   models: string[];
-  max_budget?: number;
-  current_spend: number;
-  rpm_limit?: number;
-  tpm_limit?: number;
-  expires_at?: string;
-  status: "active" | "expired" | "revoked";
-  ip_restrictions: string[];
-  metadata: Record<string, string>;
-  created_at: string;
+  max_budget: number | null;
+  spend: number;
+  rate_limit_rpm: number | null;
+  rate_limit_tpm: number | null;
+  expires_at: string | null;
+  permissions: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
-export interface GeneratedKey {
-  key: string;
-  key_name: string;
+/** POST /key/generate request body. */
+export interface KeyGenerateRequest {
+  user_id?: string;
+  team_id?: string;
+  models?: string[];
+  max_budget?: number;
+  rate_limit_rpm?: number;
+  rate_limit_tpm?: number;
   expires_at?: string;
+  permissions?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  key_prefix?: string;
+}
+
+/** POST /key/update request body. */
+export interface KeyUpdateRequest {
+  key_id: string;
+  models?: string[];
+  max_budget?: number;
+  rate_limit_rpm?: number;
+  rate_limit_tpm?: number;
+  expires_at?: string;
+  permissions?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+/** POST /key/rotate request body. */
+export interface KeyRotateRequest {
+  key_id: string;
+  key_prefix?: string;
+  grace_period_seconds?: number;
+}
+
+/** Response from POST /key/generate — includes the plaintext key once. */
+export interface GeneratedKeyResponse extends VirtualKey {
+  key: string;
+}
+
+/** Response from POST /key/rotate. */
+export interface RotatedKeyResponse {
+  new_key: VirtualKey & { key: string };
+  old_key: VirtualKey;
+  grace_period_seconds: number;
 }
 
 export interface Team {
