@@ -272,6 +272,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.images import router as images_router
     from routerbot.proxy.routes.keys import router as keys_router
     from routerbot.proxy.routes.metrics import router as metrics_router
+    from routerbot.proxy.routes.model_management import router as model_mgmt_router
     from routerbot.proxy.routes.models import router as models_router
     from routerbot.proxy.routes.rerank import router as rerank_router
     from routerbot.proxy.routes.spend import router as spend_router
@@ -290,6 +291,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Key management routes
     app.include_router(keys_router)
+
+    # Model management routes (admin CRUD)
+    app.include_router(model_mgmt_router)
 
     # SSO routes
     app.include_router(sso_router)

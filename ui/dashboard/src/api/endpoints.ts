@@ -13,9 +13,17 @@ export const endpoints = {
   config: "/config",
   configReload: "/config/reload",
 
-  // Models (OpenAI-compatible)
+  // Models (OpenAI-compatible, read-only)
   models: "/v1/models",
   model: (id: string) => `/v1/models/${id}`,
+
+  // Model Management (admin CRUD)
+  modelList: "/model/list",
+  modelInfo: (name: string) => `/model/info?model_name=${name}`,
+  modelNew: "/model/new",
+  modelUpdate: "/model/update",
+  modelDelete: "/model/delete",
+  modelTest: "/model/test_connection",
 
   // Keys (backend uses /key/ prefix)
   keyGenerate: "/key/generate",
