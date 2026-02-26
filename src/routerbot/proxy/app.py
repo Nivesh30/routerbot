@@ -15,6 +15,7 @@ and the router layer are registered in separate modules.
 from __future__ import annotations
 
 import logging
+import pathlib
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -22,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from routerbot.core.exceptions import (
     AuthenticationError,
@@ -51,6 +52,13 @@ if TYPE_CHECKING:
     from routerbot.core.config_models import RouterBotConfig
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Dashboard static assets path (present only when frontend has been built)
+# ---------------------------------------------------------------------------
+
+# Resolve: src/routerbot/proxy/app.py → project root → ui/dashboard/dist
+_DASHBOARD_DIST = (pathlib.Path(__file__).parent.parent.parent.parent / "ui" / "dashboard" / "dist").resolve()
 
 # ---------------------------------------------------------------------------
 # Application factory
@@ -192,6 +200,11 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
     _register_routes(app)
 
     # -----------------------------------------------------------------
+    # Dashboard static files (mounted last so API routes take priority)
+    # -----------------------------------------------------------------
+    _register_dashboard_static(app)
+
+    # -----------------------------------------------------------------
     # OpenAPI customization
     # -----------------------------------------------------------------
     from routerbot.proxy.openapi import configure_openapi
@@ -326,8 +339,10 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(models_router, prefix="/v1")
 
     # Register an OpenAI-compatible models fallback at root too
-    @app.get("/", include_in_schema=False)
-    async def root() -> JSONResponse:
+    @app.get("/", include_in_schema=False, response_model=None)
+    async def root() -> JSONResponse | RedirectResponse:
+        if _DASHBOARD_DIST.exists():
+            return RedirectResponse(url="/ui/")
         return JSONResponse(
             content={
                 "name": "RouterBot",
@@ -336,6 +351,62 @@ def _register_routes(app: FastAPI) -> None:
                 "status": "running",
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# Dashboard static file serving
+# ---------------------------------------------------------------------------
+
+
+def _register_dashboard_static(app: FastAPI) -> None:
+    """Mount the built dashboard at ``/ui/`` (production only).
+
+    Uses a hybrid approach:
+    - ``/ui/assets/`` is served directly via StaticFiles (for caching headers)
+    - All other ``/ui/*`` paths serve ``index.html`` for React Router (SPA routing)
+    """
+    if not _DASHBOARD_DIST.exists():
+        logger.debug(
+            "Dashboard dist not found at %s; skipping static file serving",
+            _DASHBOARD_DIST,
+        )
+        return
+
+    from fastapi.responses import FileResponse, HTMLResponse
+    from fastapi.staticfiles import StaticFiles
+
+    assets_dir = _DASHBOARD_DIST / "assets"
+    index_path = _DASHBOARD_DIST / "index.html"
+
+    if not index_path.exists():
+        logger.warning("Dashboard index.html not found at %s", index_path)
+        return
+
+    # Mount /ui/assets/ for optimised static file delivery (JS/CSS chunks)
+    if assets_dir.exists():
+        app.mount("/ui/assets", StaticFiles(directory=str(assets_dir)), name="vite-assets")
+
+    # Serve individual root-level files (favicon, manifest, robots, etc.)
+    @app.get("/ui/{filename}", include_in_schema=False)
+    async def ui_root_file(filename: str) -> FileResponse | HTMLResponse:
+        file_path = _DASHBOARD_DIST / filename
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
+
+    # Catch-all SPA handler: /ui/ and /ui/<any nested path>
+    @app.get("/ui/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str) -> HTMLResponse:
+        return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
+
+    # Redirect /ui (no trailing slash) → /ui/
+    @app.get("/ui", include_in_schema=False)
+    async def ui_redirect() -> FileResponse | HTMLResponse:
+        from fastapi.responses import RedirectResponse as _RedirectResponse
+
+        return _RedirectResponse(url="/ui/")  # type: ignore[return-value]
+
+    logger.info("Dashboard UI serving at /ui (dist: %s)", _DASHBOARD_DIST)
 
 
 # ---------------------------------------------------------------------------

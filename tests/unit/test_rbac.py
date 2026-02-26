@@ -253,9 +253,10 @@ class TestAuthMiddleware:
 
     @pytest.mark.asyncio
     async def test_public_path_root(self, rbac_client):
-        """Root path should be public."""
-        resp = await rbac_client.get("/")
-        assert resp.status_code == 200
+        """Root path should be publicly accessible (no auth required)."""
+        resp = await rbac_client.get("/", follow_redirects=False)
+        # Root returns 200 (JSON info) or 307 redirect to /ui/ if dashboard is built
+        assert resp.status_code in (200, 307, 308), f"Unexpected status {resp.status_code}"
 
     @pytest.mark.asyncio
     async def test_master_key_via_bearer(self, rbac_client, rbac_app):
