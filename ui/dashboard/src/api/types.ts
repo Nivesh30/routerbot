@@ -11,17 +11,69 @@ export interface AuthInfo {
 }
 
 export interface Model {
-  id: string;
   model_name: string;
+  model: string;
   provider: string;
+  api_base?: string | null;
+  api_key_set: boolean;
+  max_tokens?: number | null;
+  rpm?: number | null;
+  tpm?: number | null;
+  timeout?: number | null;
+  extra_headers: Record<string, string>;
+  extra_body: Record<string, unknown>;
+  created: number;
+  model_info?: {
+    input_cost_per_token?: number | null;
+    output_cost_per_token?: number | null;
+    supports_streaming?: boolean;
+    supports_function_calling?: boolean;
+    supports_vision?: boolean;
+    max_input_tokens?: number | null;
+    max_output_tokens?: number | null;
+  };
+}
+
+export interface ModelNewRequest {
+  model_name: string;
+  model: string;
+  api_key?: string;
   api_base?: string;
-  api_key_name?: string;
+  api_version?: string;
   max_tokens?: number;
   rpm?: number;
   tpm?: number;
-  status: "healthy" | "degraded" | "down";
-  request_count: number;
-  avg_latency_ms: number;
+  timeout?: number;
+  input_cost_per_token?: number;
+  output_cost_per_token?: number;
+  supports_streaming?: boolean;
+  supports_function_calling?: boolean;
+  supports_vision?: boolean;
+}
+
+export interface ModelUpdateRequest {
+  model_name: string;
+  model?: string;
+  api_key?: string;
+  api_base?: string;
+  api_version?: string;
+  max_tokens?: number;
+  rpm?: number;
+  tpm?: number;
+  timeout?: number;
+  input_cost_per_token?: number;
+  output_cost_per_token?: number;
+  supports_streaming?: boolean;
+  supports_function_calling?: boolean;
+  supports_vision?: boolean;
+}
+
+export interface ModelTestResult {
+  status: "success" | "error";
+  model_name: string;
+  provider_model?: string;
+  latency_ms: number;
+  message: string;
 }
 
 export interface VirtualKey {
