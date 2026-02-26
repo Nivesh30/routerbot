@@ -1,88 +1,161 @@
-import { Table } from "../components/common/Table";
+import { RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
+
 import { Badge } from "../components/common/Badge";
+import { Button } from "../components/common/Button";
+import { EmptyState } from "../components/common/EmptyState";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { Table } from "../components/common/Table";
 import { PageContainer } from "../components/layout/PageContainer";
+import { useAuditLogs } from "../api/hooks/useSettings";
 import { formatDateTime } from "../utils/formatters";
 
 import type { Column } from "../components/common/Table";
+import type { AuditEntry } from "../api/types";
 
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: "info" | "warning" | "error";
-  model: string;
-  message: string;
-  request_id: string;
-}
-
-const levelVariant = {
-  info: "info" as const,
-  warning: "warning" as const,
-  error: "danger" as const,
+const ACTION_VARIANTS: Record<string, "success" | "danger" | "warning" | "info" | "neutral"> = {
+  create: "success",
+  delete: "danger",
+  update: "warning",
+  read: "info",
+  login: "info",
+  logout: "neutral",
 };
 
-const mockLogs: LogEntry[] = [
-  {
-    id: "1",
-    timestamp: new Date(Date.now() - 5 * 60_000).toISOString(),
-    level: "info",
-    model: "gpt-4o",
-    message: "Chat completion successful",
-    request_id: "req-abc123",
-  },
-  {
-    id: "2",
-    timestamp: new Date(Date.now() - 12 * 60_000).toISOString(),
-    level: "warning",
-    model: "claude-sonnet-4-20250514",
-    message: "Rate limit approaching (80% RPM)",
-    request_id: "req-def456",
-  },
-  {
-    id: "3",
-    timestamp: new Date(Date.now() - 25 * 60_000).toISOString(),
-    level: "error",
-    model: "gemini-2.0-flash",
-    message: "Provider returned 503 Service Unavailable",
-    request_id: "req-ghi789",
-  },
-];
-
-const columns: Column<LogEntry>[] = [
-  {
-    key: "timestamp",
-    header: "Time",
-    sortable: true,
-    render: (l: LogEntry) => (
-      <span className="text-xs text-surface-500">{formatDateTime(l.timestamp)}</span>
-    ),
-  },
-  {
-    key: "level",
-    header: "Level",
-    render: (l: LogEntry) => <Badge variant={levelVariant[l.level]}>{l.level}</Badge>,
-  },
-  { key: "model", header: "Model", sortable: true },
-  { key: "message", header: "Message" },
-  {
-    key: "request_id",
-    header: "Request ID",
-    render: (l: LogEntry) => (
-      <code className="text-xs text-surface-500">{l.request_id}</code>
-    ),
-  },
-];
+function getVariant(action: string): "success" | "danger" | "warning" | "info" | "neutral" {
+  const lower = action.toLowerCase();
+  for (const [k, v] of Object.entries(ACTION_VARIANTS)) {
+    if (lower.includes(k)) return v;
+  }
+  return "neutral";
+}
 
 export function Logs() {
+  const [page, setPage] = useState(1);
+  const [actorFilter, setActorFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const PER_PAGE = 25;
+
+  const { data, isLoading, error, refetch, isFetching } = useAuditLogs({
+    page,
+    per_page: PER_PAGE,
+    ...(actorFilter ? { actor: actorFilter } : {}),
+    ...(actionFilter ? { action: actionFilter } : {}),
+  });
+
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const pages = Math.ceil(total / PER_PAGE);
+
+  const columns: Column<AuditEntry>[] = [
+    {
+      key: "timestamp",
+      header: "Time",
+      sortable: true,
+      render: (e: AuditEntry) => (
+        <span className="whitespace-nowrap text-gray-500">{formatDateTime(e.timestamp)}</span>
+      ),
+    },
+    {
+      key: "actor",
+      header: "Actor",
+      render: (e: AuditEntry) => (
+        <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+          {e.actor}
+        </span>
+      ),
+    },
+    {
+      key: "action",
+      header: "Action",
+      sortable: true,
+      render: (e: AuditEntry) => (
+        <Badge variant={getVariant(e.action)}>
+          {e.action}
+        </Badge>
+      ),
+    },
+    {
+      key: "target",
+      header: "Target",
+      render: (e: AuditEntry) => (
+        <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{e.target}</span>
+      ),
+    },
+    {
+      key: "details",
+      header: "Details",
+      render: (e: AuditEntry) => {
+        const keys = Object.keys(e.details);
+        if (keys.length === 0) return null;
+        return (
+          <span className="text-xs text-gray-500">
+            {keys
+              .slice(0, 2)
+              .map((k) => `${k}=${JSON.stringify(e.details[k])}`)
+              .join(", ")}
+            {keys.length > 2 ? "…" : ""}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
-    <PageContainer title="Logs" description="View request and system logs">
-      <div className="rounded-xl border border-surface-200 bg-white dark:border-surface-700 dark:bg-surface-800">
-        <Table
-          columns={columns}
-          data={mockLogs}
-          keyFn={(item) => item.id}
-          emptyMessage="No logs"
+    <PageContainer
+      title="Audit Logs"
+      description="Track all admin and API actions"
+      actions={
+        <Button variant="secondary" onClick={() => refetch()} loading={isFetching}>
+          <RefreshCw className="h-4 w-4 mr-1" />Refresh
+        </Button>
+      }
+    >
+      <div className="mb-4 flex gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Filter by actor…"
+            className="pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-48"
+            value={actorFilter}
+            onChange={(e) => { setActorFilter(e.target.value); setPage(1); }}
+          />
+        </div>
+        <input
+          type="text"
+          placeholder="Filter by action…"
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-48"
+          value={actionFilter}
+          onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
         />
       </div>
+
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : error ? (
+        <p className="text-red-500">Failed to load audit logs.</p>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="No audit logs"
+          description={actorFilter || actionFilter ? "Try clearing your filters." : "Admin actions will appear here."}
+        />
+      ) : (
+        <>
+          <Table data={items} columns={columns} keyFn={(e) => e.id} />
+          {pages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-gray-500">
+                Page {page} of {pages} ({total} total)
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
+                <Button size="sm" variant="secondary" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </PageContainer>
   );
 }
