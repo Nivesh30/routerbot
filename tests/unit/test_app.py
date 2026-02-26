@@ -105,12 +105,16 @@ def test_default_app_has_routes() -> None:
 
 @pytest.mark.asyncio
 async def test_root_endpoint(client: AsyncClient) -> None:
-    """GET / should return 200 with RouterBot metadata."""
-    resp = await client.get("/")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["name"] == "RouterBot"
-    assert data["status"] == "running"
+    """GET / returns RouterBot metadata JSON or redirects to /ui/ if dashboard is built."""
+    resp = await client.get("/", follow_redirects=False)
+    # If the dashboard dist directory exists, root redirects to /ui/
+    if resp.status_code in (307, 308):
+        assert resp.headers.get("location") == "/ui/"
+    else:
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["name"] == "RouterBot"
+        assert data["status"] == "running"
 
 
 # ---------------------------------------------------------------------------

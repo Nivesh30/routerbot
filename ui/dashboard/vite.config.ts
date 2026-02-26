@@ -61,6 +61,7 @@ export default defineConfig({
       },
     },
   },
+  base: "/ui/",
   build: {
     outDir: "dist",
     sourcemap: false,

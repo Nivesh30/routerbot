@@ -1,0 +1,51 @@
+# ─── Version control ──────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ─── Python build artefacts ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ─── Frontend build artefacts ─────────────────────────────────────────────────
+ui/dashboard/node_modules/
+ui/dashboard/dist/
+ui/dashboard/.vite/
+
+# ─── Dev / CI tooling ─────────────────────────────────────────────────────────
+.github/
+docs/
+tests/
+*.md
+Makefile
+
+# ─── Secrets & local config ───────────────────────────────────────────────────
+routerbot_config.yaml
+routerbot_config.example.yaml
+*.env
+.env.*
+*.pem
+*.key
+
+# ─── IDE / OS ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# ─── Temporary files ──────────────────────────────────────────────────────────
+*.txt
+*.log
+_*.py
