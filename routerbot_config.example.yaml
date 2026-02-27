@@ -91,3 +91,30 @@ routerbot_settings:
 # environment_variables:
 #   LANGFUSE_PUBLIC_KEY: "pk-..."
 #   LANGFUSE_SECRET_KEY: "sk-..."
+
+# ─── MCP Servers ──────────────────────────────────────────
+# Configure external MCP (Model Context Protocol) servers to expose their
+# tools through the RouterBot gateway at /v1/mcp/*.
+# mcp_servers:
+#   - name: github
+#     transport: sse                   # sse | stdio | streamable-http
+#     url: http://github-mcp:3000/sse
+#     visibility: public               # public (all teams) | private
+#     timeout: 30.0
+#     headers:
+#       Authorization: "Bearer ${GITHUB_TOKEN}"
+#
+#   - name: internal-db
+#     transport: stdio
+#     command: npx @internal/db-mcp
+#     args: ["--verbose"]
+#     env:
+#       DB_HOST: localhost
+#     visibility: private
+#     allowed_teams: ["data-team", "backend-team"]
+#
+#   - name: slack-mcp
+#     transport: streamable-http
+#     url: http://slack-mcp:8080/mcp
+#     visibility: private
+#     allowed_teams: ["support-team"]

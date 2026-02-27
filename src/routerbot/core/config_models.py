@@ -161,5 +161,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Environment variables to set on startup",
     )
+    mcp_servers: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="MCP server configurations (parsed by MCP module)",
+    )
 
     model_config = {"extra": "allow"}
