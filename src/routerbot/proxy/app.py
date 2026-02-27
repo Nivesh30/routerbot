@@ -255,6 +255,18 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         state.mcp_registry = registry
         logger.info("MCP gateway initialised with %d server(s)", len(registry))
 
+    # Initialise A2A agent gateway (if configured)
+    if state.config and getattr(state.config, "a2a_agents", None):
+        from routerbot.core.a2a.models import A2AAgentConfig
+        from routerbot.core.a2a.registry import A2AAgentRegistry
+
+        a2a_registry = A2AAgentRegistry()
+        a2a_configs = [A2AAgentConfig(**a) for a in state.config.a2a_agents]
+        await a2a_registry.register_from_config(a2a_configs)
+        await a2a_registry.start_health_checks()
+        state.a2a_registry = a2a_registry
+        logger.info("A2A agent gateway initialised with %d agent(s)", len(a2a_registry))
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -273,6 +285,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
     if mcp_registry is not None:
         await mcp_registry.shutdown()
 
+    # Shut down A2A registry
+    a2a_registry = getattr(state, "a2a_registry", None)
+    if a2a_registry is not None:
+        await a2a_registry.shutdown()
+
     # Close any open Redis connections
     if state.redis is not None:
         import contextlib
@@ -290,6 +307,7 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
 
 def _register_routes(app: FastAPI) -> None:
     """Register all route modules on the application."""
+    from routerbot.proxy.routes.a2a import router as a2a_router
     from routerbot.proxy.routes.audio import router as audio_router
     from routerbot.proxy.routes.audit import router as audit_router
     from routerbot.proxy.routes.auth import router as auth_router
@@ -356,6 +374,7 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(batches_router, prefix="/v1")
     app.include_router(models_router, prefix="/v1")
     app.include_router(mcp_router, prefix="/v1")
+    app.include_router(a2a_router, prefix="/v1")
 
     # Register an OpenAI-compatible models fallback at root too
     @app.get("/", include_in_schema=False, response_model=None)
