@@ -173,5 +173,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Semantic routing configuration (parsed by semantic module)",
     )
+    request_transform: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Request transformation pipeline configuration",
+    )
 
     model_config = {"extra": "allow"}

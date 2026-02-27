@@ -282,6 +282,29 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
                 len(sr_config.ab_tests),
             )
 
+    # Initialise request transformation pipeline (if configured)
+    if state.config and getattr(state.config, "request_transform", None):
+        from routerbot.core.transform.enricher import RequestEnricher
+        from routerbot.core.transform.models import TransformConfig
+        from routerbot.core.transform.pipeline import RequestTransformPipeline
+        from routerbot.core.transform.postprocessor import ResponsePostProcessor
+        from routerbot.core.transform.prompt_injector import PromptInjector
+
+        tf_config = TransformConfig(**state.config.request_transform)
+        if tf_config.enabled:
+            pipeline = RequestTransformPipeline(tf_config)
+            if tf_config.prompt_templates:
+                pipeline.register(PromptInjector(tf_config.prompt_templates))
+            if tf_config.enrichment_sources:
+                pipeline.register(RequestEnricher(tf_config.enrichment_sources))
+            if tf_config.post_processing_rules:
+                pipeline.register(ResponsePostProcessor(tf_config.post_processing_rules))
+            state.transform_pipeline = pipeline
+            logger.info(
+                "Request transform pipeline enabled: %d hooks",
+                len(pipeline.hooks),
+            )
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 

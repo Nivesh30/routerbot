@@ -16,7 +16,7 @@ from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from routerbot.core.exceptions import BadRequestError, ModelNotFoundError
-from routerbot.core.types import CompletionRequest  # noqa: TC001
+from routerbot.core.types import CompletionRequest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -142,6 +142,22 @@ async def chat_completions(
 
     provider = await _get_provider_for_model(raw_request, effective_model)
 
+    # ── Request transformation pipeline (pre-request) ──
+    transform_pipeline = getattr(state, "transform_pipeline", None) if state else None
+    if transform_pipeline and transform_pipeline.enabled:
+        from routerbot.core.transform.models import TransformContext
+
+        tf_context = TransformContext(
+            model=effective_model,
+            request_id=request_id,
+            team_id=getattr(raw_request.state, "team_id", None),
+            key_id=getattr(raw_request.state, "key_id", None),
+            user_id=getattr(raw_request.state, "user_id", None),
+        )
+        request_data = body.model_dump(exclude_none=True)
+        await transform_pipeline.run_pre_request(request_data, tf_context)
+        body = CompletionRequest(**request_data)
+
     if body.stream:
         # --- Streaming response ---
         generator = provider.chat_completion_stream(body)
@@ -160,8 +176,13 @@ async def chat_completions(
     response: CompletionResponse = await provider.chat_completion(body)
     background_tasks.add_task(_log_usage, response, body.model)
 
+    # ── Response transformation pipeline (post-response) ──
+    response_data = response.model_dump()
+    if transform_pipeline and transform_pipeline.enabled:
+        await transform_pipeline.run_post_response(response_data, tf_context)
+
     return JSONResponse(
-        content=response.model_dump(),
+        content=response_data,
         headers={"X-Request-ID": request_id},
     )
 
