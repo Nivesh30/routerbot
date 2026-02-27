@@ -118,3 +118,27 @@ routerbot_settings:
 #     url: http://slack-mcp:8080/mcp
 #     visibility: private
 #     allowed_teams: ["support-team"]
+
+# ─── A2A Agents ───────────────────────────────────────────
+# Configure A2A (Agent-to-Agent) agents for inter-agent communication.
+# Agents are discovered at /.well-known/agent.json and invoked at /tasks/send.
+# a2a_agents:
+#   - name: data-analyst
+#     url: http://data-agent:9000
+#     description: "Analyses datasets and generates reports"
+#     framework: langgraph              # generic | pydantic-ai | langgraph | custom
+#     visibility: public
+#     timeout: 120.0
+#     skills:
+#       - id: sql_query
+#         name: SQL Query
+#         tags: ["sql", "data"]
+#
+#   - name: code-reviewer
+#     url: http://code-reviewer:8080
+#     description: "Reviews pull requests and suggests improvements"
+#     framework: pydantic-ai
+#     visibility: private
+#     allowed_teams: ["engineering"]
+#     headers:
+#       Authorization: "Bearer ${CODE_REVIEW_TOKEN}"

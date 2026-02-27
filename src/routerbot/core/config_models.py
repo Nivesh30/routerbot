@@ -165,5 +165,9 @@ class RouterBotConfig(BaseModel):
         default_factory=list,
         description="MCP server configurations (parsed by MCP module)",
     )
+    a2a_agents: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="A2A agent configurations (parsed by A2A module)",
+    )
 
     model_config = {"extra": "allow"}
