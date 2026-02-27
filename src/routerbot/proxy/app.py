@@ -267,6 +267,21 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         state.a2a_registry = a2a_registry
         logger.info("A2A agent gateway initialised with %d agent(s)", len(a2a_registry))
 
+    # Initialise semantic routing (if configured)
+    if state.config and getattr(state.config, "semantic_routing", None):
+        from routerbot.core.semantic.classifier import SemanticRouter
+        from routerbot.core.semantic.models import SemanticRoutingConfig
+
+        sr_config = SemanticRoutingConfig(**state.config.semantic_routing)
+        if sr_config.enabled:
+            state.semantic_router = SemanticRouter(sr_config)
+            logger.info(
+                "Semantic routing enabled: %d intent rules, %d pattern rules, %d A/B tests",
+                len(sr_config.rules),
+                len(sr_config.pattern_rules),
+                len(sr_config.ab_tests),
+            )
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 

@@ -123,7 +123,24 @@ async def chat_completions(
     """
     request_id = getattr(raw_request.state, "request_id", None) or "unknown"
 
-    provider = await _get_provider_for_model(raw_request, body.model)
+    # Apply semantic routing if configured
+    effective_model = body.model
+    state = getattr(raw_request.app.state, "routerbot", None)
+    semantic_router = getattr(state, "semantic_router", None) if state else None
+    if semantic_router and semantic_router.enabled:
+        effective_model = await semantic_router.route(
+            model=body.model,
+            messages=[m.model_dump() for m in body.messages] if body.messages else None,
+        )
+        if effective_model != body.model:
+            logger.info(
+                "Semantic routing: %s → %s (request=%s)",
+                body.model,
+                effective_model,
+                request_id,
+            )
+
+    provider = await _get_provider_for_model(raw_request, effective_model)
 
     if body.stream:
         # --- Streaming response ---

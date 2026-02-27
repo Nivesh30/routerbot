@@ -169,5 +169,9 @@ class RouterBotConfig(BaseModel):
         default_factory=list,
         description="A2A agent configurations (parsed by A2A module)",
     )
+    semantic_routing: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Semantic routing configuration (parsed by semantic module)",
+    )
 
     model_config = {"extra": "allow"}
