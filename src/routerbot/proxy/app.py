@@ -327,6 +327,30 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             state.plugin_manager = mgr
             logger.info("Plugin system enabled: %d plugins loaded", len(loaded))
 
+    # Initialise resilience layer (if configured)
+    if state.config and getattr(state.config, "resilience", None):
+        from routerbot.core.resilience.bulkhead import BulkheadManager
+        from routerbot.core.resilience.circuit_breaker import CircuitBreakerRegistry
+        from routerbot.core.resilience.degradation import DegradationManager
+        from routerbot.core.resilience.models import ResilienceConfig
+        from routerbot.core.resilience.region import RegionRouter
+        from routerbot.core.resilience.request_queue import RequestQueueManager
+
+        res_config = ResilienceConfig(**state.config.resilience)
+        if res_config.enabled:
+            state.circuit_breaker_registry = CircuitBreakerRegistry(res_config.circuit_breaker)
+            state.request_queue_manager = RequestQueueManager(res_config.request_queue)
+            state.bulkhead_manager = BulkheadManager(
+                res_config.bulkhead_defaults,
+                res_config.bulkhead_overrides,
+            )
+            state.region_router = RegionRouter(res_config.region_routing)
+            state.degradation_manager = DegradationManager()
+            logger.info(
+                "Resilience layer enabled: circuit-breaker, queue, bulkhead, regions=%d",
+                len(res_config.region_routing.regions),
+            )
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 

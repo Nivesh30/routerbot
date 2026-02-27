@@ -185,5 +185,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Plugin system configuration",
     )
+    resilience: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Resilience, circuit-breaker, bulkhead, and region-routing configuration",
+    )
 
     model_config = {"extra": "allow"}
