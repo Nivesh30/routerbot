@@ -73,3 +73,9 @@ secrets/
 # ─── Build artifacts ──────────────────────────────────────
 *.tar.gz
 *.zip
+
+# ─── Temp / scratch files ────────────────────────────────
+test_*.txt
+regression_*.txt
+regr_*.txt
+_*.py
