@@ -242,3 +242,40 @@ routerbot_settings:
 #       metadata_pairs:
 #         api_version: "2.0"
 #         processed_by: routerbot
+
+# ──────────────────────────────────────────────────────────────────────
+# AUTO-SCALING & COST RECOMMENDATIONS
+# ──────────────────────────────────────────────────────────────────────
+# scaling:
+#   enabled: true
+#   snapshot_interval_seconds: 60      # how often traffic snapshots are taken
+#   max_snapshots: 1440                # retain up to 24h at 1/min
+#   enable_cost_alerts: true
+#   enable_recommendations: true
+#
+#   # Cost thresholds that trigger alerts
+#   cost_thresholds:
+#     - name: daily-spend
+#       amount: 100.00                 # USD
+#       period: daily                  # daily | weekly | monthly
+#       severity: warning              # info | warning | critical
+#     - name: gpt4-weekly
+#       amount: 500.00
+#       period: weekly
+#       severity: critical
+#       model: gpt-4                   # per-model threshold
+#
+#   # Alternative models for cost-saving recommendations
+#   alternative_models:
+#     - model: gpt-3.5-turbo
+#       provider: openai
+#       input_cost_per_token: 0.0000005
+#       output_cost_per_token: 0.0000015
+#       avg_latency_ms: 200
+#       quality_score: 0.7
+#     - model: claude-3-haiku
+#       provider: anthropic
+#       input_cost_per_token: 0.00000025
+#       output_cost_per_token: 0.00000125
+#       avg_latency_ms: 150
+#       quality_score: 0.65

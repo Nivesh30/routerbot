@@ -177,5 +177,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Request transformation pipeline configuration",
     )
+    scaling: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Auto-scaling, cost alerts, and recommendation configuration",
+    )
 
     model_config = {"extra": "allow"}

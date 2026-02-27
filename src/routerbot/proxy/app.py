@@ -305,6 +305,16 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
                 len(pipeline.hooks),
             )
 
+    # Initialise auto-scaling recommendation engine (if configured)
+    if state.config and getattr(state.config, "scaling", None):
+        from routerbot.core.scaling.engine import RecommendationEngine
+        from routerbot.core.scaling.models import ScalingConfig
+
+        sc_config = ScalingConfig(**state.config.scaling)
+        if sc_config.enabled:
+            state.recommendation_engine = RecommendationEngine(sc_config)
+            logger.info("Auto-scaling recommendation engine enabled")
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
