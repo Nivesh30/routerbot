@@ -68,7 +68,8 @@ ui/dashboard/.cache/
 # ─── Secrets (never commit) ───────────────────────────────
 *.pem
 *.key
-secrets/
+/secrets/
+!src/routerbot/core/secrets/
 
 # ─── Build artifacts ──────────────────────────────────────
 *.tar.gz
@@ -78,4 +79,4 @@ secrets/
 test_*.txt
 regression_*.txt
 regr_*.txt
-_*.py
+/_*.py

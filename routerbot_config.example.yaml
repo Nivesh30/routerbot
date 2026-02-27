@@ -34,6 +34,26 @@ model_list:
   #     model: gemini/gemini-1.5-pro
   #     api_key: os.environ/GEMINI_API_KEY
 
+  # ─── Secret Manager References ─────────────────────────────
+  # Instead of os.environ/ you can use any supported secret manager:
+  #
+  # AWS Secrets Manager:
+  #   api_key: aws_secret/my-openai-key
+  #   api_key: aws_secret/eu-west-1:my-openai-key      # specific region
+  #   api_key: aws_secret/my-credentials#api_key        # JSON key extraction
+  #
+  # Google Cloud Secret Manager:
+  #   api_key: gcp_secret/my-project/openai-key
+  #   api_key: gcp_secret/my-project/openai-key/3       # specific version
+  #
+  # Azure Key Vault:
+  #   api_key: azure_keyvault/my-vault/openai-key
+  #   api_key: azure_keyvault/my-vault/openai-key/v1    # specific version
+  #
+  # HashiCorp Vault (KV v2):
+  #   api_key: vault/secret/openai
+  #   api_key: vault/secret/credentials#api_key          # JSON key extraction
+
 # ─── General Settings ──────────────────────────────────────
 general_settings:
   master_key: os.environ/ROUTERBOT_MASTER_KEY

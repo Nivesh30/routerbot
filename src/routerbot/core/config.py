@@ -5,7 +5,10 @@ Supports layered configuration from multiple sources:
 2. YAML config file (routerbot_config.yaml)
 3. Environment variable overrides (ROUTERBOT_ prefix)
 
-Secret references like ``os.environ/VAR_NAME`` are resolved at load time.
+Secret references are resolved at load time:
+- ``os.environ/VAR_NAME`` — environment variables
+- ``aws_secret/name``, ``gcp_secret/project/name``, ``azure_keyvault/vault/name``,
+  ``vault/path`` — external secret managers (when backends are configured)
 """
 
 from __future__ import annotations
@@ -13,14 +16,20 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from routerbot.core.config_models import RouterBotConfig
 
+if TYPE_CHECKING:
+    from routerbot.core.secrets.base import SecretResolver
+
 # Pattern to match os.environ/VAR_NAME references in config values
 _ENV_REF_PATTERN = re.compile(r"^os\.environ/(\w+)$")
+
+# Module-level secret resolver (lazily initialised by _get_secret_resolver)
+_secret_resolver: SecretResolver | None = None
 
 # Default config file paths to search (in order)
 _DEFAULT_CONFIG_PATHS = [
@@ -204,6 +213,9 @@ def load_config(
     # Apply environment variable overrides
     data = _apply_env_overrides(data)
 
+    # Resolve external secret manager references (aws_secret/, gcp_secret/, etc.)
+    data = _resolve_secret_refs(data)
+
     # Resolve os.environ/ references
     data = _resolve_env_refs(data)
 
@@ -259,3 +271,46 @@ def reset_config() -> None:
     """Reset the global config singleton. Primarily for testing."""
     global _config
     _config = None
+
+
+# ---------------------------------------------------------------------------
+# Secret manager integration
+# ---------------------------------------------------------------------------
+
+
+def _resolve_secret_refs(data: Any) -> Any:
+    """Resolve external secret manager references in config data.
+
+    If no secret resolver is configured, this is a no-op pass-through.
+    """
+    resolver = _secret_resolver
+    if resolver is None:
+        return data
+    return resolver.resolve_all(data)
+
+
+def configure_secret_resolver(resolver: SecretResolver) -> None:
+    """Set the global secret resolver used during config loading.
+
+    Call this **before** :func:`load_config` to enable resolution of
+    ``aws_secret/``, ``gcp_secret/``, ``azure_keyvault/``, and ``vault/``
+    references in configuration values.
+
+    Example::
+
+        from routerbot.core.secrets.base import SecretResolver, SecretCache
+        from routerbot.core.secrets.aws import AWSSecretsManagerBackend
+        from routerbot.core.config import configure_secret_resolver
+
+        resolver = SecretResolver(cache=SecretCache(ttl_seconds=300))
+        resolver.register_backend(AWSSecretsManagerBackend())
+        configure_secret_resolver(resolver)
+    """
+    global _secret_resolver
+    _secret_resolver = resolver
+
+
+def reset_secret_resolver() -> None:
+    """Clear the global secret resolver. Primarily for testing."""
+    global _secret_resolver
+    _secret_resolver = None
