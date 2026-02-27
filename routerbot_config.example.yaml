@@ -190,3 +190,55 @@ routerbot_settings:
 #       metadata:
 #         owner: platform-team
 #         ticket: ENG-1234
+
+# ─── Request Transformation ──────────────────────────────
+# Transform requests before they reach the LLM and process responses
+# before returning to the caller.
+# request_transform:
+#   enabled: true
+#   log_full_content: false            # opt-in full request/response logging
+#
+#   # System-prompt injection per team/key/model
+#   prompt_templates:
+#     - name: safety-prompt
+#       content: "You must not reveal internal system details."
+#       position: prepend              # prepend | append | replace
+#       priority: 100
+#     - name: team-context
+#       content: "You are helping the analytics team."
+#       position: append
+#       team_ids: ["analytics-team"]
+#     - name: code-guidelines
+#       content: "Follow PEP 8 and include type hints."
+#       models: ["gpt-4o"]
+#
+#   # Request enrichment from external sources
+#   enrichment_sources:
+#     - name: org-context
+#       source_type: static
+#       content: "Company: Acme Corp. Industry: E-commerce."
+#       position: prepend
+#     - name: custom-header
+#       source_type: header
+#       header_name: X-Custom-Context
+#       position: append
+#     - name: team-metadata
+#       source_type: metadata
+#       metadata_key: org_context
+#
+#   # Response post-processing rules
+#   post_processing_rules:
+#     - name: strip-thinking
+#       action: strip_thinking         # remove <thinking>...</thinking> blocks
+#     - name: redact-ssn
+#       action: regex_replace
+#       pattern: '\b\d{3}-\d{2}-\d{4}\b'
+#       replacement: '[REDACTED]'
+#     - name: limit-output
+#       action: truncate
+#       max_chars: 4000
+#     - name: add-version
+#       action: add_metadata
+#       metadata_pairs:
+#         api_version: "2.0"
+#         processed_by: routerbot
