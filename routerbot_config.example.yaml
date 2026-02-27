@@ -279,3 +279,28 @@ routerbot_settings:
 #       output_cost_per_token: 0.00000125
 #       avg_latency_ms: 150
 #       quality_score: 0.65
+
+# ──────────────────────────────────────────────────────────────────────
+# PLUGIN SYSTEM
+# ──────────────────────────────────────────────────────────────────────
+# plugins:
+#   enabled: true
+#   auto_discover: true                # scan Python entry points
+#   entry_point_group: routerbot.plugins
+#   disabled_plugins:                  # names to skip during loading
+#     - bad-plugin
+#
+#   # Explicit plugin declarations (alternative to entry points)
+#   plugins:
+#     - name: datadog-metrics
+#       module: routerbot_plugin_datadog
+#       class: DatadogCallbackHook
+#       config:
+#         api_key: "os.environ/DD_API_KEY"
+#         site: "datadoghq.com"
+#     - name: slack-alerts
+#       module: routerbot_plugin_slack
+#       class: SlackCallbackHook
+#       config:
+#         webhook_url: "os.environ/SLACK_WEBHOOK_URL"
+#         channel: "#llm-alerts"
