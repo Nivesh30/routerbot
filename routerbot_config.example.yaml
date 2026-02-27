@@ -142,3 +142,51 @@ routerbot_settings:
 #     allowed_teams: ["engineering"]
 #     headers:
 #       Authorization: "Bearer ${CODE_REVIEW_TOKEN}"
+
+# ─── Semantic Routing ─────────────────────────────────────
+# Route requests to different models based on intent classification,
+# regex patterns, and A/B traffic splitting.
+# semantic_routing:
+#   enabled: true
+#   classifier_model: gpt-4o-mini       # model used for LLM-based classification
+#   default_model: gpt-4o               # fallback when no rule matches
+#   cache_classifications: true
+#   classification_timeout: 5.0
+#
+#   # Pattern rules — regex matched first (highest priority)
+#   pattern_rules:
+#     - pattern: '\bSQL\b'
+#       route_to: gpt-4o
+#       priority: 200
+#     - pattern: '\b(kubernetes|k8s|docker)\b'
+#       route_to: gpt-4o
+#       priority: 150
+#
+#   # Intent-based rules — matched after pattern rules
+#   rules:
+#     - intent: code_generation
+#       route_to: gpt-4o
+#       priority: 100
+#     - intent: code_review
+#       route_to: gpt-4o
+#       priority: 100
+#     - intent: creative_writing
+#       route_to: claude-sonnet
+#       priority: 100
+#     - intent: translation
+#       route_to: gpt-4o-mini
+#       priority: 50
+#     - intent: simple_qa
+#       route_to: gpt-4o-mini
+#       priority: 50
+#
+#   # A/B tests — split traffic between model variants
+#   ab_tests:
+#     - name: gpt4o-vs-claude
+#       model_a: gpt-4o
+#       model_b: claude-sonnet
+#       traffic_split: 0.5              # 50% to model_a, 50% to model_b
+#       enabled: true
+#       metadata:
+#         owner: platform-team
+#         ticket: ENG-1234
