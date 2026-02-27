@@ -315,6 +315,18 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             state.recommendation_engine = RecommendationEngine(sc_config)
             logger.info("Auto-scaling recommendation engine enabled")
 
+    # Initialise plugin system (if configured)
+    if state.config and getattr(state.config, "plugins", None):
+        from routerbot.core.plugins.manager import PluginManager
+        from routerbot.core.plugins.models import PluginConfig
+
+        pl_config = PluginConfig(**state.config.plugins)
+        if pl_config.enabled:
+            mgr = PluginManager(pl_config)
+            loaded = await mgr.load_all()
+            state.plugin_manager = mgr
+            logger.info("Plugin system enabled: %d plugins loaded", len(loaded))
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -337,6 +349,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
     a2a_registry = getattr(state, "a2a_registry", None)
     if a2a_registry is not None:
         await a2a_registry.shutdown()
+
+    # Shut down plugin manager
+    plugin_manager = getattr(state, "plugin_manager", None)
+    if plugin_manager is not None:
+        await plugin_manager.shutdown()
 
     # Close any open Redis connections
     if state.redis is not None:

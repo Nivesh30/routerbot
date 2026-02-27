@@ -181,5 +181,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Auto-scaling, cost alerts, and recommendation configuration",
     )
+    plugins: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Plugin system configuration",
+    )
 
     model_config = {"extra": "allow"}
