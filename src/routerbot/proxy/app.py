@@ -243,6 +243,18 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
     state.router = Router(config=state.config)
     logger.info("Router initialised with %d model(s)", len(state.router.list_models()))
 
+    # Initialise MCP gateway (if configured)
+    if state.config and state.config.mcp_servers:
+        from routerbot.core.mcp.models import MCPServerConfig
+        from routerbot.core.mcp.registry import MCPServerRegistry
+
+        registry = MCPServerRegistry()
+        configs = [MCPServerConfig(**s) for s in state.config.mcp_servers]
+        await registry.register_from_config(configs)
+        await registry.start_health_checks()
+        state.mcp_registry = registry
+        logger.info("MCP gateway initialised with %d server(s)", len(registry))
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -255,6 +267,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
     config_watcher = getattr(state, "config_watcher", None)
     if config_watcher is not None:
         await config_watcher.stop()
+
+    # Shut down MCP registry
+    mcp_registry = getattr(state, "mcp_registry", None)
+    if mcp_registry is not None:
+        await mcp_registry.shutdown()
 
     # Close any open Redis connections
     if state.redis is not None:
@@ -284,6 +301,7 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.health import router as health_router
     from routerbot.proxy.routes.images import router as images_router
     from routerbot.proxy.routes.keys import router as keys_router
+    from routerbot.proxy.routes.mcp import router as mcp_router
     from routerbot.proxy.routes.metrics import router as metrics_router
     from routerbot.proxy.routes.model_management import router as model_mgmt_router
     from routerbot.proxy.routes.models import router as models_router
@@ -337,6 +355,7 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(rerank_router, prefix="/v1")
     app.include_router(batches_router, prefix="/v1")
     app.include_router(models_router, prefix="/v1")
+    app.include_router(mcp_router, prefix="/v1")
 
     # Register an OpenAI-compatible models fallback at root too
     @app.get("/", include_in_schema=False, response_model=None)
