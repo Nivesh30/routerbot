@@ -55,7 +55,7 @@ proxy = [
     "python-multipart>=0.0.9",
     "python-jose[cryptography]>=3.3,<4",
     "passlib[bcrypt]>=1.7,<2",
-    "aiofiles>=23.2,<25",
+    "aiofiles>=23.2,<26",
 ]
 dev = [
     "pytest>=8.0,<9",
