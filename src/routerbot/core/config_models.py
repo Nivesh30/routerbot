@@ -197,5 +197,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Batch processing and async job queue configuration",
     )
+    hub: dict[str, Any] = Field(
+        default_factory=dict,
+        description="AI Hub & Playground configuration",
+    )
 
     model_config = {"extra": "allow"}

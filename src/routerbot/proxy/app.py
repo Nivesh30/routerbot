@@ -409,6 +409,23 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             batch_cfg.queue.max_pending_jobs,
         )
 
+    # -- AI Hub & Playground -------------------------------------------------
+    from routerbot.hub.model_hub import ModelHub
+    from routerbot.hub.models import HubConfig
+    from routerbot.hub.playground import Playground
+    from routerbot.hub.prompt_manager import PromptManager
+
+    hub_raw = config.hub if hasattr(config, "hub") else {}
+    hub_cfg = HubConfig(**hub_raw) if hub_raw else HubConfig()
+
+    if hub_cfg.enabled:
+        model_hub = ModelHub()
+        model_hub.register_defaults()
+        state.model_hub = model_hub  # type: ignore[attr-defined]
+        state.playground = Playground(config=hub_cfg)  # type: ignore[attr-defined]
+        state.prompt_manager = PromptManager(config=hub_cfg)  # type: ignore[attr-defined]
+        logger.info("AI Hub & Playground enabled")
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
