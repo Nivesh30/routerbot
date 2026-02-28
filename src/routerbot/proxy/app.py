@@ -351,6 +351,41 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
                 len(res_config.region_routing.regions),
             )
 
+    # Initialise advanced auth (if configured)
+    if state.config and getattr(state.config, "advanced_auth", None):
+        from routerbot.auth.advanced.key_scoping import KeyScopeValidator
+        from routerbot.auth.advanced.models import AdvancedAuthConfig
+        from routerbot.auth.advanced.mtls import MTLSAuthenticator
+        from routerbot.auth.advanced.permissions import PermissionManager
+        from routerbot.auth.advanced.token_exchange import TokenExchanger
+        from routerbot.auth.advanced.webhook_auth import WebhookAuthenticator
+
+        aa_config = AdvancedAuthConfig(**state.config.advanced_auth)
+
+        if aa_config.mtls.enabled:
+            state.mtls_authenticator = MTLSAuthenticator(aa_config.mtls)
+            logger.info("mTLS authentication enabled")
+
+        if aa_config.webhook_auth.enabled:
+            wh = WebhookAuthenticator(aa_config.webhook_auth)
+            await wh.setup()
+            state.webhook_authenticator = wh
+            logger.info("Webhook authentication enabled")
+
+        if aa_config.token_exchange.enabled:
+            te = TokenExchanger(aa_config.token_exchange)
+            await te.setup()
+            state.token_exchanger = te
+            logger.info("Token exchange enabled with %d providers", len(te.list_providers()))
+
+        if aa_config.key_scopes:
+            state.key_scope_validator = KeyScopeValidator(aa_config.key_scopes)
+            logger.info("Key scoping enabled with %d scopes", len(aa_config.key_scopes))
+
+        if aa_config.permission_sets:
+            state.permission_manager = PermissionManager(aa_config.permission_sets)
+            logger.info("Fine-grained permissions enabled with %d sets", len(aa_config.permission_sets))
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
