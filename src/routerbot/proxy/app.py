@@ -426,6 +426,21 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         state.prompt_manager = PromptManager(config=hub_cfg)  # type: ignore[attr-defined]
         logger.info("AI Hub & Playground enabled")
 
+    # -- Evaluation & Benchmarking -------------------------------------------
+    from routerbot.evaluation.benchmark import Benchmark
+    from routerbot.evaluation.llm_judge import LLMJudge
+    from routerbot.evaluation.models import EvalConfig
+    from routerbot.evaluation.regression import RegressionDetector
+
+    eval_raw = config.evaluation if hasattr(config, "evaluation") else {}
+    eval_cfg = EvalConfig(**eval_raw) if eval_raw else EvalConfig()
+
+    if eval_cfg.enabled:
+        state.benchmark = Benchmark()  # type: ignore[attr-defined]
+        state.llm_judge = LLMJudge(config=eval_cfg.judge)  # type: ignore[attr-defined]
+        state.regression_detector = RegressionDetector(config=eval_cfg.regression)  # type: ignore[attr-defined]
+        logger.info("Evaluation & Benchmarking enabled")
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
