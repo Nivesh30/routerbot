@@ -205,5 +205,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Evaluation, benchmarking & regression detection configuration",
     )
+    k8s_operator: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Kubernetes operator configuration",
+    )
 
     model_config = {"extra": "allow"}

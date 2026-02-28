@@ -441,6 +441,21 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         state.regression_detector = RegressionDetector(config=eval_cfg.regression)  # type: ignore[attr-defined]
         logger.info("Evaluation & Benchmarking enabled")
 
+    # -- Kubernetes Operator -------------------------------------------------
+    from routerbot.k8s.autoscaler import Autoscaler
+    from routerbot.k8s.health_manager import HealthManager
+    from routerbot.k8s.models import K8sOperatorConfig
+    from routerbot.k8s.operator import Operator as K8sOperator
+
+    k8s_raw = config.k8s_operator if hasattr(config, "k8s_operator") else {}
+    k8s_cfg = K8sOperatorConfig(**k8s_raw) if k8s_raw else K8sOperatorConfig()
+
+    if k8s_cfg.enabled:
+        state.k8s_operator = K8sOperator()  # type: ignore[attr-defined]
+        state.k8s_autoscaler = Autoscaler()  # type: ignore[attr-defined]
+        state.k8s_health_manager = HealthManager()  # type: ignore[attr-defined]
+        logger.info("Kubernetes Operator enabled")
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
