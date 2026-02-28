@@ -277,3 +277,46 @@ export interface SSOProvider {
   type: "google" | "github" | "microsoft" | "okta" | "generic_oidc";
   enabled: boolean;
 }
+
+// ─── Config update types ──────────────────────────────────────────────────────
+
+export interface GeneralSettingsUpdate {
+  log_level?: string;
+  request_timeout?: number;
+  max_request_size_mb?: number;
+  max_response_size_mb?: number;
+  cors_allow_origins?: string[];
+  block_robots?: boolean;
+}
+
+export interface RouterSettingsUpdate {
+  routing_strategy?: string;
+  num_retries?: number;
+  retry_delay?: number;
+  timeout?: number;
+  cooldown_time?: number;
+  allowed_fails?: number;
+  enable_health_check?: boolean;
+  health_check_interval?: number;
+  fallbacks?: Record<string, string[]>;
+}
+
+export interface CacheSettingsUpdate {
+  enabled?: boolean;
+  type?: string;
+  ttl?: number;
+}
+
+export interface ConfigUpdateRequest {
+  general_settings?: GeneralSettingsUpdate;
+  router_settings?: RouterSettingsUpdate;
+  cache_settings?: CacheSettingsUpdate;
+}
+
+export interface ConfigUpdateResponse {
+  status: string;
+  old_hash: string;
+  new_hash: string;
+  general_settings: Record<string, unknown>;
+  router_settings: Record<string, unknown>;
+}

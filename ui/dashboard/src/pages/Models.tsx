@@ -98,6 +98,22 @@ const columns: Column<Model>[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Provider presets for the model form
+// ---------------------------------------------------------------------------
+const PROVIDER_PRESETS = [
+  { label: "OpenAI", prefix: "openai/" },
+  { label: "Anthropic", prefix: "anthropic/" },
+  { label: "Google Gemini", prefix: "gemini/" },
+  { label: "Azure OpenAI", prefix: "azure/" },
+  { label: "AWS Bedrock", prefix: "bedrock/" },
+  { label: "Cohere", prefix: "cohere/" },
+  { label: "Mistral", prefix: "mistral/" },
+  { label: "Groq", prefix: "groq/" },
+  { label: "DeepSeek", prefix: "deepseek/" },
+  { label: "Ollama", prefix: "ollama/" },
+];
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export function Models() {
@@ -253,14 +269,47 @@ export function Models() {
         error={errors.model_name}
         disabled={showEdit}
       />
-      <Input
-        label="Provider/Model"
-        placeholder="e.g. openai/gpt-4o"
-        value={form.model}
-        onChange={(e) => updateField("model", e.target.value)}
-        error={errors.model}
-        hint="Format: provider/model-name"
-      />
+      <div className="space-y-1">
+        <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+          Provider / Model
+        </label>
+        <div className="flex gap-2">
+          <select
+            className="w-40 rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm dark:border-surface-600 dark:bg-surface-800 dark:text-surface-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            value={PROVIDER_PRESETS.find(
+              (p) => form.model.startsWith(p.prefix),
+            )?.prefix ?? ""}
+            onChange={(e) => {
+              const prefix = e.target.value;
+              if (prefix) {
+                const currentModel = form.model.includes("/")
+                  ? form.model.split("/").slice(1).join("/")
+                  : form.model;
+                updateField("model", prefix + currentModel);
+              }
+            }}
+          >
+            <option value="">Provider…</option>
+            {PROVIDER_PRESETS.map((p) => (
+              <option key={p.prefix} value={p.prefix}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <input
+            className="flex-1 rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm dark:border-surface-600 dark:bg-surface-800 dark:text-surface-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            placeholder="openai/gpt-4o"
+            value={form.model}
+            onChange={(e) => updateField("model", e.target.value)}
+          />
+        </div>
+        {errors.model && (
+          <p className="text-xs text-red-500 mt-0.5">{errors.model}</p>
+        )}
+        <p className="text-xs text-surface-400 mt-0.5">
+          Format: provider/model-name
+        </p>
+      </div>
       <Input
         label="API Key"
         type="password"
