@@ -386,6 +386,29 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             state.permission_manager = PermissionManager(aa_config.permission_sets)
             logger.info("Fine-grained permissions enabled with %d sets", len(aa_config.permission_sets))
 
+    # -- Batch processing & async job queue ----------------------------------
+    from routerbot.core.batch.batch_manager import BatchManager
+    from routerbot.core.batch.job_queue import JobQueue
+    from routerbot.core.batch.models import BatchConfig
+    from routerbot.core.batch.worker_pool import WorkerPool
+
+    batch_raw = config.batch if hasattr(config, "batch") else {}
+    batch_cfg = BatchConfig(**batch_raw) if batch_raw else BatchConfig()
+
+    if batch_cfg.enabled:
+        jq = JobQueue(config=batch_cfg.queue)
+        bm = BatchManager(config=batch_cfg.queue)
+        wp = WorkerPool(queue=jq, config=batch_cfg.queue)
+        await wp.start()
+        state.job_queue = jq  # type: ignore[attr-defined]
+        state.batch_manager = bm  # type: ignore[attr-defined]
+        state.worker_pool = wp  # type: ignore[attr-defined]
+        logger.info(
+            "Batch processing enabled (workers=%d, max_pending=%d)",
+            batch_cfg.queue.worker_count,
+            batch_cfg.queue.max_pending_jobs,
+        )
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -413,6 +436,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
     plugin_manager = getattr(state, "plugin_manager", None)
     if plugin_manager is not None:
         await plugin_manager.shutdown()
+
+    # Shut down worker pool
+    worker_pool = getattr(state, "worker_pool", None)
+    if worker_pool is not None:
+        await worker_pool.stop()
 
     # Close any open Redis connections
     if state.redis is not None:
