@@ -201,5 +201,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="AI Hub & Playground configuration",
     )
+    evaluation: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Evaluation, benchmarking & regression detection configuration",
+    )
 
     model_config = {"extra": "allow"}
