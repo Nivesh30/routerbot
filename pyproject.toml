@@ -90,6 +90,7 @@ packages = ["src/routerbot"]
 target-version = "py311"
 line-length = 120
 src = ["src", "tests"]
+exclude = [".github"]
 
 [tool.ruff.lint]
 select = [

@@ -207,7 +207,7 @@ class JWTAuthenticator:
     async def _refresh_jwks(self) -> None:
         """Fetch JWKS from the configured URI and update the key cache."""
         now = time.monotonic()
-        if now - self._jwks_last_refresh < JWKS_REFRESH_INTERVAL:
+        if self._jwks_last_refresh > 0 and (now - self._jwks_last_refresh < JWKS_REFRESH_INTERVAL):
             return  # Recently refreshed
 
         if not self._config.jwks_uri:
