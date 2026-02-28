@@ -103,32 +103,24 @@ class TestKeywordBackend:
     """Tests for the keyword-based moderation backend."""
 
     @pytest.mark.asyncio()
-    async def test_no_keywords_matched(
-        self, keyword_backend: KeywordModerationBackend
-    ) -> None:
+    async def test_no_keywords_matched(self, keyword_backend: KeywordModerationBackend) -> None:
         result = await keyword_backend.check("This is a normal message")
         assert result.flagged is False
 
     @pytest.mark.asyncio()
-    async def test_hate_keyword(
-        self, keyword_backend: KeywordModerationBackend
-    ) -> None:
+    async def test_hate_keyword(self, keyword_backend: KeywordModerationBackend) -> None:
         result = await keyword_backend.check("This contains hate speech")
         assert result.flagged is True
         assert "hate" in result.flagged_categories
 
     @pytest.mark.asyncio()
-    async def test_violence_keyword(
-        self, keyword_backend: KeywordModerationBackend
-    ) -> None:
+    async def test_violence_keyword(self, keyword_backend: KeywordModerationBackend) -> None:
         result = await keyword_backend.check("Plans to attack the server")
         assert result.flagged is True
         assert "violence" in result.flagged_categories
 
     @pytest.mark.asyncio()
-    async def test_multiple_categories(
-        self, keyword_backend: KeywordModerationBackend
-    ) -> None:
+    async def test_multiple_categories(self, keyword_backend: KeywordModerationBackend) -> None:
         result = await keyword_backend.check("hate speech and kill")
         assert result.flagged is True
         assert "hate" in result.flagged_categories
@@ -158,9 +150,7 @@ class TestKeywordBackend:
         assert result2.flagged is True
 
     @pytest.mark.asyncio()
-    async def test_score_values(
-        self, keyword_backend: KeywordModerationBackend
-    ) -> None:
+    async def test_score_values(self, keyword_backend: KeywordModerationBackend) -> None:
         result = await keyword_backend.check("hate speech")
         hate_score = next(s for s in result.scores if s.category == "hate")
         assert hate_score.score == 1.0
@@ -297,9 +287,7 @@ class TestBlockMode:
     @pytest.mark.asyncio()
     async def test_safe_content_allows(self, context: GuardrailContext) -> None:
         backend = MockBackend(ModerationResult(flagged=False))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "Hello!"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -308,9 +296,7 @@ class TestBlockMode:
     async def test_flagged_content_blocks(self, context: GuardrailContext) -> None:
         scores = [ModerationScore(category="hate", score=0.95, flagged=True)]
         backend = MockBackend(ModerationResult(flagged=True, scores=scores))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "bad content"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
@@ -323,9 +309,7 @@ class TestBlockMode:
             ModerationScore(category="violence", score=0.8, flagged=True),
         ]
         backend = MockBackend(ModerationResult(flagged=True, scores=scores))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "bad"}]
         result = await guardrail.check_request(messages, context)
         assert "flagged_categories" in result.details
@@ -334,9 +318,7 @@ class TestBlockMode:
     @pytest.mark.asyncio()
     async def test_empty_messages(self, context: GuardrailContext) -> None:
         backend = MockBackend()
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": ""}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -344,9 +326,7 @@ class TestBlockMode:
     @pytest.mark.asyncio()
     async def test_non_string_content(self, context: GuardrailContext) -> None:
         backend = MockBackend()
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": [{"type": "text"}]}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -364,9 +344,7 @@ class TestFlagMode:
     async def test_flagged_content_allows(self, context: GuardrailContext) -> None:
         scores = [ModerationScore(category="hate", score=0.9, flagged=True)]
         backend = MockBackend(ModerationResult(flagged=True, scores=scores))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="flag", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="flag", name="mod")
         messages = [{"role": "user", "content": "some content"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -375,9 +353,7 @@ class TestFlagMode:
     @pytest.mark.asyncio()
     async def test_safe_content_no_flag(self, context: GuardrailContext) -> None:
         backend = MockBackend(ModerationResult(flagged=False))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="flag", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="flag", name="mod")
         messages = [{"role": "user", "content": "Hello"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -393,9 +369,7 @@ class TestThresholds:
     """Tests for per-category threshold overrides."""
 
     @pytest.mark.asyncio()
-    async def test_threshold_overrides_flag(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_threshold_overrides_flag(self, context: GuardrailContext) -> None:
         """Score below custom threshold should NOT be flagged."""
         scores = [
             ModerationScore(category="hate", score=0.5, flagged=True),
@@ -413,9 +387,7 @@ class TestThresholds:
         assert result.action == GuardrailAction.ALLOW
 
     @pytest.mark.asyncio()
-    async def test_threshold_exceeds_blocks(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_threshold_exceeds_blocks(self, context: GuardrailContext) -> None:
         """Score at or above threshold should be flagged."""
         scores = [
             ModerationScore(category="hate", score=0.85, flagged=False),
@@ -433,9 +405,7 @@ class TestThresholds:
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
-    async def test_threshold_mixed_categories(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_threshold_mixed_categories(self, context: GuardrailContext) -> None:
         scores = [
             ModerationScore(category="hate", score=0.3, flagged=True),
             ModerationScore(category="violence", score=0.7, flagged=True),
@@ -455,17 +425,13 @@ class TestThresholds:
         assert "hate" not in result.details["flagged_categories"]
 
     @pytest.mark.asyncio()
-    async def test_no_threshold_uses_backend_flags(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_no_threshold_uses_backend_flags(self, context: GuardrailContext) -> None:
         """Without thresholds, backend's native flags are used."""
         scores = [
             ModerationScore(category="hate", score=0.1, flagged=True),
         ]
         backend = MockBackend(ModerationResult(flagged=True, scores=scores))
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "test"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
@@ -480,21 +446,15 @@ class TestBackendErrors:
     """Tests for fail-open behavior on backend errors."""
 
     @pytest.mark.asyncio()
-    async def test_backend_error_allows_request(
-        self, context: GuardrailContext
-    ) -> None:
-        guardrail = ContentModerationGuardrail(
-            backend=FailingBackend(), mode="block", name="mod"
-        )
+    async def test_backend_error_allows_request(self, context: GuardrailContext) -> None:
+        guardrail = ContentModerationGuardrail(backend=FailingBackend(), mode="block", name="mod")
         messages = [{"role": "user", "content": "test"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
         assert result.details.get("error") is True
 
     @pytest.mark.asyncio()
-    async def test_backend_error_allows_response(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_backend_error_allows_response(self, context: GuardrailContext) -> None:
         guardrail = ContentModerationGuardrail(
             backend=FailingBackend(),
             mode="block",
@@ -517,9 +477,7 @@ class TestResponseChecking:
     @pytest.mark.asyncio()
     async def test_disabled_by_default(self, context: GuardrailContext) -> None:
         backend = MockBackend()
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         result = await guardrail.check_response("anything", context)
         assert result.action == GuardrailAction.ALLOW
 
@@ -573,24 +531,16 @@ class TestKeywordIntegration:
 
     @pytest.mark.asyncio()
     async def test_keyword_block(self, context: GuardrailContext) -> None:
-        backend = create_keyword_moderation_backend(
-            category_keywords={"hate": ["harmful content"]}
-        )
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        backend = create_keyword_moderation_backend(category_keywords={"hate": ["harmful content"]})
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "This has harmful content"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
     async def test_keyword_safe(self, context: GuardrailContext) -> None:
-        backend = create_keyword_moderation_backend(
-            category_keywords={"hate": ["harmful"]}
-        )
-        guardrail = ContentModerationGuardrail(
-            backend=backend, mode="block", name="mod"
-        )
+        backend = create_keyword_moderation_backend(category_keywords={"hate": ["harmful"]})
+        guardrail = ContentModerationGuardrail(backend=backend, mode="block", name="mod")
         messages = [{"role": "user", "content": "A perfectly fine message"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
@@ -611,11 +561,7 @@ class TestIntegrationWithManager:
         scores = [ModerationScore(category="hate", score=0.9, flagged=True)]
         backend = MockBackend(ModerationResult(flagged=True, scores=scores))
         manager = GuardrailManager()
-        manager.register(
-            ContentModerationGuardrail(
-                backend=backend, mode="block", name="mod", priority=1
-            )
-        )
+        manager.register(ContentModerationGuardrail(backend=backend, mode="block", name="mod", priority=1))
 
         messages = [{"role": "user", "content": "bad content"}]
         result = await manager.run_request_guardrails(messages, context)
@@ -627,11 +573,7 @@ class TestIntegrationWithManager:
 
         backend = MockBackend(ModerationResult(flagged=False))
         manager = GuardrailManager()
-        manager.register(
-            ContentModerationGuardrail(
-                backend=backend, mode="block", name="mod", priority=1
-            )
-        )
+        manager.register(ContentModerationGuardrail(backend=backend, mode="block", name="mod", priority=1))
 
         messages = [{"role": "user", "content": "hello"}]
         result = await manager.run_request_guardrails(messages, context)
@@ -647,9 +589,7 @@ class TestProperties:
     """Tests for guardrail configuration properties."""
 
     def test_mode_property(self) -> None:
-        g = ContentModerationGuardrail(
-            backend=MockBackend(), mode="flag"
-        )
+        g = ContentModerationGuardrail(backend=MockBackend(), mode="flag")
         assert g.mode == "flag"
 
     def test_backend_property(self) -> None:
@@ -662,7 +602,5 @@ class TestProperties:
         assert g.name == "ContentModerationGuardrail"
 
     def test_priority(self) -> None:
-        g = ContentModerationGuardrail(
-            backend=MockBackend(), priority=5
-        )
+        g = ContentModerationGuardrail(backend=MockBackend(), priority=5)
         assert g.priority == 5

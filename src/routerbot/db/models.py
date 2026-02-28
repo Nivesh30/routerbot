@@ -82,9 +82,7 @@ class User(TimestampMixin, Base):
     keys: Mapped[list[VirtualKey]] = relationship("VirtualKey", back_populates="user", lazy="selectin")
     team_memberships: Mapped[list[UserTeam]] = relationship("UserTeam", back_populates="user", lazy="selectin")
 
-    __table_args__ = (
-        Index("ix_users_sso_provider_id", "sso_provider_id"),
-    )
+    __table_args__ = (Index("ix_users_sso_provider_id", "sso_provider_id"),)
 
 
 # ---------------------------------------------------------------------------
@@ -119,16 +117,10 @@ class UserTeam(Base):
 
     __tablename__ = "user_teams"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    team_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    team_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
-    added_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     user: Mapped[User] = relationship("User", back_populates="team_memberships")
@@ -168,9 +160,7 @@ class VirtualKey(TimestampMixin, Base):
     user: Mapped[User | None] = relationship("User", back_populates="keys")
     team: Mapped[Team | None] = relationship("Team", back_populates="keys")
 
-    __table_args__ = (
-        Index("ix_virtual_keys_user_team", "user_id", "team_id"),
-    )
+    __table_args__ = (Index("ix_virtual_keys_user_team", "user_id", "team_id"),)
 
 
 # ---------------------------------------------------------------------------
@@ -236,9 +226,7 @@ class AuditLog(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
 
-    __table_args__ = (
-        Index("ix_audit_logs_actor_action", "actor_id", "action"),
-    )
+    __table_args__ = (Index("ix_audit_logs_actor_action", "actor_id", "action"),)
 
 
 # ---------------------------------------------------------------------------

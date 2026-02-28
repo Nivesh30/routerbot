@@ -225,17 +225,13 @@ class TestKeyValidation:
 
     @pytest.mark.asyncio
     async def test_validate_ip_allowed(self, session):
-        plaintext, _vk = await self._create_key(
-            session, permissions={"allowed_ips": ["10.0.0.1", "10.0.0.2"]}
-        )
+        plaintext, _vk = await self._create_key(session, permissions={"allowed_ips": ["10.0.0.1", "10.0.0.2"]})
         result = await validate_key(plaintext, session, request_ip="10.0.0.1")
         assert result.valid is True
 
     @pytest.mark.asyncio
     async def test_validate_ip_not_allowed(self, session):
-        plaintext, _vk = await self._create_key(
-            session, permissions={"allowed_ips": ["10.0.0.1"]}
-        )
+        plaintext, _vk = await self._create_key(session, permissions={"allowed_ips": ["10.0.0.1"]})
         result = await validate_key(plaintext, session, request_ip="10.0.0.99")
         assert result.valid is False
         assert result.error_code == "ip_not_allowed"
@@ -378,9 +374,7 @@ class TestKeyUpdateRoute:
 
     @pytest.mark.asyncio
     async def test_update_key_by_id(self, client):
-        gen_resp = await client.post(
-            "/key/generate", json={}, headers=MASTER_HEADERS
-        )
+        gen_resp = await client.post("/key/generate", json={}, headers=MASTER_HEADERS)
         key_id = gen_resp.json()["id"]
 
         resp = await client.post(
@@ -415,9 +409,7 @@ class TestKeyDeleteRoute:
 
     @pytest.mark.asyncio
     async def test_delete_key(self, client):
-        gen_resp = await client.post(
-            "/key/generate", json={}, headers=MASTER_HEADERS
-        )
+        gen_resp = await client.post("/key/generate", json={}, headers=MASTER_HEADERS)
         plaintext = gen_resp.json()["key"]
 
         resp = await client.post(
@@ -461,9 +453,7 @@ class TestKeyInfoRoute:
 
     @pytest.mark.asyncio
     async def test_get_key_info_by_id(self, client):
-        gen_resp = await client.post(
-            "/key/generate", json={}, headers=MASTER_HEADERS
-        )
+        gen_resp = await client.post("/key/generate", json={}, headers=MASTER_HEADERS)
         key_id = gen_resp.json()["id"]
 
         resp = await client.get(
@@ -510,9 +500,7 @@ class TestKeyListRoute:
 
     @pytest.mark.asyncio
     async def test_list_active_keys(self, client):
-        gen_resp = await client.post(
-            "/key/generate", json={}, headers=MASTER_HEADERS
-        )
+        gen_resp = await client.post("/key/generate", json={}, headers=MASTER_HEADERS)
         # Deactivate it
         await client.post(
             "/key/delete",
@@ -559,9 +547,7 @@ class TestKeyRotateRoute:
 
     @pytest.mark.asyncio
     async def test_rotate_key_with_grace_period(self, client):
-        gen_resp = await client.post(
-            "/key/generate", json={}, headers=MASTER_HEADERS
-        )
+        gen_resp = await client.post("/key/generate", json={}, headers=MASTER_HEADERS)
         old_plaintext = gen_resp.json()["key"]
 
         resp = await client.post(

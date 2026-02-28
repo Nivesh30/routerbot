@@ -822,9 +822,7 @@ class TestHMACSignature:
             config = WebhookConfig(url=WEBHOOK_URL, secret=secret)
             delivery = WebhookDelivery(config)
             await delivery.start()
-            await delivery.enqueue(
-                WebhookEvent(event_type="test", event_id="same-id", timestamp=1700000000.0)
-            )
+            await delivery.enqueue(WebhookEvent(event_type="test", event_id="same-id", timestamp=1700000000.0))
             sigs.append(route.calls.last.request.headers["X-RouterBot-Signature"])
             await delivery.shutdown()
 
@@ -1074,10 +1072,7 @@ class TestEdgeCases:
         await delivery.start()
 
         # Fire 20 concurrent enqueues
-        tasks = [
-            delivery.enqueue(WebhookEvent(event_type="test", event_id=f"evt-{i}"))
-            for i in range(20)
-        ]
+        tasks = [delivery.enqueue(WebhookEvent(event_type="test", event_id=f"evt-{i}")) for i in range(20)]
         await asyncio.gather(*tasks)
 
         assert delivery.total_delivered == 20

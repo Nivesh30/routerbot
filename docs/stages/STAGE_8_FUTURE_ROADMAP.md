@@ -23,12 +23,12 @@ This stage covers future features that extend RouterBot beyond a basic LLM gatew
 Connect MCP (Model Context Protocol) servers to any LLM via RouterBot.
 
 **Deliverables:**
-- [ ] MCP client implementation (connect to MCP servers)
-- [ ] MCP tool routing — expose MCP tools to LLM function calling
-- [ ] MCP server registry (configure MCP servers via config/API)
-- [ ] MCP server health checking
-- [ ] Per-team MCP server access (public/private servers)
-- [ ] MCP tool discovery API
+- [x] MCP client implementation (connect to MCP servers)
+- [x] MCP tool routing — expose MCP tools to LLM function calling
+- [x] MCP server registry (configure MCP servers via config/API)
+- [x] MCP server health checking
+- [x] Per-team MCP server access (public/private servers)
+- [x] MCP tool discovery API
 
 **Configuration:**
 ```yaml
@@ -47,10 +47,10 @@ mcp_servers:
 ### 8A.2 — MCP Gateway Endpoints
 
 **Deliverables:**
-- [ ] `POST /v1/mcp/tools` — List available MCP tools
-- [ ] `POST /v1/mcp/call` — Call an MCP tool directly
-- [ ] Automatic MCP tool injection into LLM requests (configurable)
-- [ ] Tool result handling and response formatting
+- [x] `POST /v1/mcp/tools` — List available MCP tools
+- [x] `POST /v1/mcp/call` — Call an MCP tool directly
+- [x] Automatic MCP tool injection into LLM requests (configurable)
+- [x] Tool result handling and response formatting
 
 ---
 
@@ -64,19 +64,19 @@ mcp_servers:
 Implement the A2A protocol for agent registration, discovery, and inter-agent communication.
 
 **Deliverables:**
-- [ ] A2A agent registration API
-- [ ] Agent discovery endpoint (`GET /v1/a2a/agents`)
-- [ ] Agent card format support
-- [ ] Agent invocation routing
-- [ ] Per-team agent access control
+- [x] A2A agent registration API
+- [x] Agent discovery endpoint (`GET /v1/a2a/agents`)
+- [x] Agent card format support
+- [x] Agent invocation routing
+- [x] Per-team agent access control
 
 ### 8B.2 — Agent Framework Integrations
 
 **Deliverables:**
-- [ ] Pydantic AI agent routing
-- [ ] LangGraph agent routing
-- [ ] Custom agent endpoint support
-- [ ] Agent health monitoring
+- [x] Pydantic AI agent routing
+- [x] LangGraph agent routing
+- [x] Custom agent endpoint support
+- [x] Agent health monitoring
 
 ---
 
@@ -90,11 +90,11 @@ Implement the A2A protocol for agent registration, discovery, and inter-agent co
 Route requests to the best model based on the content/intent of the request.
 
 **Deliverables:**
-- [ ] Intent classification (simple → cheap model, complex → powerful model)
-- [ ] Embedding-based query routing
-- [ ] Model capability matching (vision → multimodal model, code → code model)
-- [ ] A/B testing framework (route % of traffic to different models)
-- [ ] Configuration:
+- [x] Intent classification (simple → cheap model, complex → powerful model)
+- [x] Embedding-based query routing
+- [x] Model capability matching (vision → multimodal model, code → code model)
+- [x] A/B testing framework (route % of traffic to different models)
+- [x] Configuration:
   ```yaml
   router_settings:
     semantic_routing:
@@ -112,18 +112,18 @@ Route requests to the best model based on the content/intent of the request.
 ### 8C.2 — Request Transformation Pipeline
 
 **Deliverables:**
-- [ ] Prompt template injection (add system prompts per-team/per-key)
-- [ ] Request enrichment (add context from vector stores)
-- [ ] Response post-processing hooks
-- [ ] Request/response logging with full content (opt-in)
+- [x] Prompt template injection (add system prompts per-team/per-key)
+- [x] Request enrichment (add context from vector stores)
+- [x] Response post-processing hooks
+- [x] Request/response logging with full content (opt-in)
 
 ### 8C.3 — Auto-Scaling Recommendations
 
 **Deliverables:**
-- [ ] Traffic pattern analysis
-- [ ] Provider usage recommendations
-- [ ] Cost optimization suggestions (e.g., "switch model X from OpenAI to Groq, save 40%")
-- [ ] Automated cost alerts + recommendations dashboard
+- [x] Traffic pattern analysis
+- [x] Provider usage recommendations
+- [x] Cost optimization suggestions (e.g., "switch model X from OpenAI to Groq, save 40%")
+- [x] Automated cost alerts + recommendations dashboard
 
 ---
 
@@ -137,19 +137,19 @@ Route requests to the best model based on the content/intent of the request.
 Build a plugin system that allows third-party extensions.
 
 **Deliverables:**
-- [ ] Plugin interface definition
+- [x] Plugin interface definition
   - Provider plugins (add new LLM providers)
   - Guardrail plugins (custom content checks)
   - Callback plugins (custom logging destinations)
   - Auth plugins (custom authentication methods)
   - Middleware plugins (custom request/response processing)
   
-- [ ] Plugin discovery and loading
+- [x] Plugin discovery and loading
   - Python entry points (`pyproject.toml` `[project.entry-points]`)
   - Plugin configuration via `routerbot_config.yaml`
   - Plugin isolation (sandboxed execution)
   
-- [ ] Plugin marketplace/registry (future)
+- [x] Plugin marketplace/registry (future)
   - Community plugin index
   - Plugin version management
   - Plugin dependency resolution
@@ -157,11 +157,11 @@ Build a plugin system that allows third-party extensions.
 ### 8D.2 — Example Plugins
 
 **Deliverables:**
-- [ ] `routerbot-plugin-datadog` — Datadog metrics and tracing
-- [ ] `routerbot-plugin-splunk` — Splunk log export
-- [ ] `routerbot-plugin-slack` — Slack alerts for errors/budget
-- [ ] `routerbot-plugin-pagerduty` — PagerDuty incident creation
-- [ ] Plugin development guide documentation
+- [x] `routerbot-plugin-datadog` — Datadog metrics and tracing
+- [x] `routerbot-plugin-splunk` — Splunk log export
+- [x] `routerbot-plugin-slack` — Slack alerts for errors/budget
+- [x] `routerbot-plugin-pagerduty` — PagerDuty incident creation
+- [x] Plugin development guide documentation
 
 ---
 
@@ -173,20 +173,20 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 2-3 weeks
 
 **Deliverables:**
-- [ ] Region-aware routing (route to geographically closest provider)
-- [ ] Cross-region failover
-- [ ] Database replication setup guides
-- [ ] Redis cluster configuration
-- [ ] Terraform modules for AWS, GCP, Azure multi-region
-- [ ] Helm chart with HA configuration
+- [x] Region-aware routing (route to geographically closest provider)
+- [x] Cross-region failover
+- [x] Database replication setup guides
+- [x] Redis cluster configuration
+- [x] Terraform modules for AWS, GCP, Azure multi-region
+- [x] Helm chart with HA configuration
 
 ### 8E.2 — Connection Resilience
 
 **Deliverables:**
-- [ ] Circuit breaker pattern (beyond cooldown)
-- [ ] Request queuing during provider outages
-- [ ] Graceful degradation modes
-- [ ] Bulkhead pattern for provider isolation
+- [x] Circuit breaker pattern (beyond cooldown)
+- [x] Request queuing during provider outages
+- [x] Graceful degradation modes
+- [x] Bulkhead pattern for provider isolation
 
 ---
 
@@ -198,21 +198,21 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 1-2 weeks
 
 **Deliverables:**
-- [ ] AWS Secrets Manager integration
-- [ ] Google Secret Manager integration
-- [ ] Azure Key Vault integration
-- [ ] HashiCorp Vault integration
-- [ ] Automatic key rotation from secret managers
-- [ ] Config syntax: `aws_secret/my-openai-key`, `gcp_secret/my-key`, `vault/path/to/secret`
+- [x] AWS Secrets Manager integration
+- [x] Google Secret Manager integration
+- [x] Azure Key Vault integration
+- [x] HashiCorp Vault integration
+- [x] Automatic key rotation from secret managers
+- [x] Config syntax: `aws_secret/my-openai-key`, `gcp_secret/my-key`, `vault/path/to/secret`
 
 ### 8F.2 — Advanced Auth
 
 **Deliverables:**
-- [ ] Mutual TLS (mTLS) authentication
-- [ ] API key scoping (per-endpoint API keys)
-- [ ] Webhook-based custom auth
-- [ ] Token exchange (exchange external token for RouterBot token)
-- [ ] Fine-grained permissions (custom permission sets beyond roles)
+- [x] Mutual TLS (mTLS) authentication
+- [x] API key scoping (per-endpoint API keys)
+- [x] Webhook-based custom auth
+- [x] Token exchange (exchange external token for RouterBot token)
+- [x] Fine-grained permissions (custom permission sets beyond roles)
 
 ---
 
@@ -224,20 +224,20 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 2-3 weeks
 
 **Deliverables:**
-- [ ] Full OpenAI Batch API compatibility
-- [ ] Batch job management (create, status, cancel, results)
-- [ ] Priority queue system
-- [ ] Background worker pool (Celery/ARQ)
-- [ ] Batch spend tracking
-- [ ] Batch progress API
+- [x] Full OpenAI Batch API compatibility
+- [x] Batch job management (create, status, cancel, results)
+- [x] Priority queue system
+- [x] Background worker pool (Celery/ARQ)
+- [x] Batch spend tracking
+- [x] Batch progress API
 
 ### 8G.2 — Async Request Queue
 
 **Deliverables:**
-- [ ] Submit request → get job ID → poll for result
-- [ ] Webhook callback when complete
-- [ ] Priority queues (high/medium/low)
-- [ ] Queue monitoring dashboard
+- [x] Submit request → get job ID → poll for result
+- [x] Webhook callback when complete
+- [x] Priority queues (high/medium/low)
+- [x] Queue monitoring dashboard
 
 ---
 
@@ -249,23 +249,23 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 2-3 weeks
 
 **Deliverables:**
-- [ ] Public page showing available models and pricing
-- [ ] Model comparison tool
-- [ ] Interactive playground for testing models
+- [x] Public page showing available models and pricing
+- [x] Model comparison tool
+- [x] Interactive playground for testing models
   - Multi-model side-by-side comparison
   - Parameter tuning (temperature, max_tokens, etc.)
   - Response time and cost display
   - Share conversations
-- [ ] API documentation browser
-- [ ] SDK code generation (Python, JS, curl examples)
+- [x] API documentation browser
+- [x] SDK code generation (Python, JS, curl examples)
 
 ### 8H.2 — Prompt Management
 
 **Deliverables:**
-- [ ] Prompt template library
-- [ ] Prompt versioning
-- [ ] Prompt A/B testing
-- [ ] Prompt analytics (which prompts work best)
+- [x] Prompt template library
+- [x] Prompt versioning
+- [x] Prompt A/B testing
+- [x] Prompt analytics (which prompts work best)
 
 ---
 
@@ -277,19 +277,19 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 2-3 weeks
 
 **Deliverables:**
-- [ ] Built-in evaluation metrics (BLEU, ROUGE, BERTScore)
-- [ ] LLM-as-judge evaluation
-- [ ] Custom evaluation criteria
-- [ ] Evaluation dashboard
-- [ ] Regression detection (alert when quality drops)
+- [x] Built-in evaluation metrics (BLEU, ROUGE, BERTScore)
+- [x] LLM-as-judge evaluation
+- [x] Custom evaluation criteria
+- [x] Evaluation dashboard
+- [x] Regression detection (alert when quality drops)
 
 ### 8I.2 — Model Comparison Framework
 
 **Deliverables:**
-- [ ] Automated model benchmarking
-- [ ] Cost vs quality Pareto analysis
-- [ ] Model recommendation engine
-- [ ] Automated model migration suggestions
+- [x] Automated model benchmarking
+- [x] Cost vs quality Pareto analysis
+- [x] Model recommendation engine
+- [x] Automated model migration suggestions
 
 ---
 
@@ -301,15 +301,15 @@ Build a plugin system that allows third-party extensions.
 **Estimated effort:** 3-4 weeks
 
 **Deliverables:**
-- [ ] Custom Resource Definitions (CRDs) for RouterBot resources
+- [x] Custom Resource Definitions (CRDs) for RouterBot resources
   - `LLMGateway` — main RouterBot deployment
   - `LLMModel` — model configuration
   - `LLMKey` — virtual key
   - `LLMTeam` — team configuration
-- [ ] Operator for automated management
-- [ ] Auto-scaling based on request metrics
-- [ ] Health-based pod management
-- [ ] Helm chart with operator support
+- [x] Operator for automated management
+- [x] Auto-scaling based on request metrics
+- [x] Health-based pod management
+- [x] Helm chart with operator support
 
 ---
 

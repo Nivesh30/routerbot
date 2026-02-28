@@ -185,9 +185,7 @@ class TestMTLSAuthenticator:
 
     def test_authenticate_cn_pattern_match(self) -> None:
         """CN matching allowed patterns passes."""
-        auth = MTLSAuthenticator(
-            MTLSConfig(allowed_cn_patterns=["^service-.*$"])
-        )
+        auth = MTLSAuthenticator(MTLSConfig(allowed_cn_patterns=["^service-.*$"]))
         headers = {
             "X-Client-Cert": "CN=service-alpha;Serial=100",
         }
@@ -197,9 +195,7 @@ class TestMTLSAuthenticator:
 
     def test_authenticate_cn_pattern_reject(self) -> None:
         """CN not matching any allowed pattern raises error."""
-        auth = MTLSAuthenticator(
-            MTLSConfig(allowed_cn_patterns=["^service-.*$"])
-        )
+        auth = MTLSAuthenticator(MTLSConfig(allowed_cn_patterns=["^service-.*$"]))
         headers = {
             "X-Client-Cert": "CN=unknown-service;Serial=100",
         }
@@ -208,9 +204,7 @@ class TestMTLSAuthenticator:
 
     def test_authenticate_san_allowed(self) -> None:
         """SAN DNS in allowed list passes."""
-        auth = MTLSAuthenticator(
-            MTLSConfig(allowed_sans=["api.example.com"])
-        )
+        auth = MTLSAuthenticator(MTLSConfig(allowed_sans=["api.example.com"]))
         headers = {
             "X-Client-Cert": "CN=test;SAN_DNS=api.example.com",
         }
@@ -220,9 +214,7 @@ class TestMTLSAuthenticator:
 
     def test_authenticate_san_rejected(self) -> None:
         """SAN DNS not in allowed list raises error."""
-        auth = MTLSAuthenticator(
-            MTLSConfig(allowed_sans=["api.example.com"])
-        )
+        auth = MTLSAuthenticator(MTLSConfig(allowed_sans=["api.example.com"]))
         headers = {
             "X-Client-Cert": "CN=test;SAN_DNS=evil.example.com",
         }
@@ -639,9 +631,7 @@ class TestWebhookAuthenticator:
         auth._client = AsyncMock(spec=httpx.AsyncClient)
         auth._client.post = AsyncMock(return_value=mock_resp)
 
-        await auth.authenticate(
-            headers={"Authorization": "Bearer tok", "X-Custom": "secret"}
-        )
+        await auth.authenticate(headers={"Authorization": "Bearer tok", "X-Custom": "secret"})
         call_kwargs = auth._client.post.call_args
         payload = call_kwargs.kwargs.get("json", call_kwargs[1].get("json", {}))
         assert "Authorization" in payload["headers"]
@@ -980,36 +970,44 @@ class TestPermissionManager:
         pm.remove("nope")  # no error
 
     def test_resolve_direct_permissions(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="viewer", permissions=["llm:access", "models:read"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="viewer", permissions=["llm:access", "models:read"]),
+            ]
+        )
         perms = pm.resolve_permissions("viewer")
         assert perms == {"llm:access", "models:read"}
 
     def test_resolve_with_inheritance(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="viewer", permissions=["llm:access"]),
-            PermissionSet(name="editor", permissions=["models:create"], inherit_from=["viewer"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="viewer", permissions=["llm:access"]),
+                PermissionSet(name="editor", permissions=["models:create"], inherit_from=["viewer"]),
+            ]
+        )
         perms = pm.resolve_permissions("editor")
         assert "llm:access" in perms
         assert "models:create" in perms
 
     def test_resolve_deep_inheritance(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="base", permissions=["a"]),
-            PermissionSet(name="mid", permissions=["b"], inherit_from=["base"]),
-            PermissionSet(name="top", permissions=["c"], inherit_from=["mid"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="base", permissions=["a"]),
+                PermissionSet(name="mid", permissions=["b"], inherit_from=["base"]),
+                PermissionSet(name="top", permissions=["c"], inherit_from=["mid"]),
+            ]
+        )
         perms = pm.resolve_permissions("top")
         assert perms == {"a", "b", "c"}
 
     def test_resolve_circular_inheritance(self) -> None:
         """Circular inheritance is detected and doesn't loop."""
-        pm = PermissionManager([
-            PermissionSet(name="a", permissions=["x"], inherit_from=["b"]),
-            PermissionSet(name="b", permissions=["y"], inherit_from=["a"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="a", permissions=["x"], inherit_from=["b"]),
+                PermissionSet(name="b", permissions=["y"], inherit_from=["a"]),
+            ]
+        )
         perms = pm.resolve_permissions("a")
         assert "x" in perms
         assert "y" in perms
@@ -1020,85 +1018,107 @@ class TestPermissionManager:
         assert perms == set()
 
     def test_resolve_unknown_parent(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="child", permissions=["a"], inherit_from=["missing"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="child", permissions=["a"], inherit_from=["missing"]),
+            ]
+        )
         perms = pm.resolve_permissions("child")
         assert perms == {"a"}
 
     def test_check_permission_allowed(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="admin", permissions=["models:create", "llm:access"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="admin", permissions=["models:create", "llm:access"]),
+            ]
+        )
         result = pm.check_permission("models:create", ["admin"])
         assert result.allowed is True
         assert result.permission == "models:create"
 
     def test_check_permission_denied(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="viewer", permissions=["models:read"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="viewer", permissions=["models:read"]),
+            ]
+        )
         result = pm.check_permission("models:create", ["viewer"])
         assert result.allowed is False
         assert "not found" in result.reason
 
     def test_check_permission_multiple_sets(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="a", permissions=["x"]),
-            PermissionSet(name="b", permissions=["y"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="a", permissions=["x"]),
+                PermissionSet(name="b", permissions=["y"]),
+            ]
+        )
         result = pm.check_permission("y", ["a", "b"])
         assert result.allowed is True
         assert "b" in result.checked_sets
 
     def test_check_permission_via_inheritance(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="base", permissions=["perm1"]),
-            PermissionSet(name="derived", permissions=["perm2"], inherit_from=["base"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="base", permissions=["perm1"]),
+                PermissionSet(name="derived", permissions=["perm2"], inherit_from=["base"]),
+            ]
+        )
         result = pm.check_permission("perm1", ["derived"])
         assert result.allowed is True
 
     def test_check_any_permission_one_match(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="user", permissions=["read"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="user", permissions=["read"]),
+            ]
+        )
         result = pm.check_any_permission(["write", "read"], ["user"])
         assert result.allowed is True
 
     def test_check_any_permission_none_match(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="user", permissions=["read"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="user", permissions=["read"]),
+            ]
+        )
         result = pm.check_any_permission(["write", "delete"], ["user"])
         assert result.allowed is False
 
     def test_check_all_permissions_all_match(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="admin", permissions=["read", "write", "delete"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="admin", permissions=["read", "write", "delete"]),
+            ]
+        )
         result = pm.check_all_permissions(["read", "write"], ["admin"])
         assert result.allowed is True
 
     def test_check_all_permissions_partial_match(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="editor", permissions=["read", "write"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="editor", permissions=["read", "write"]),
+            ]
+        )
         result = pm.check_all_permissions(["read", "delete"], ["editor"])
         assert result.allowed is False
 
     def test_list_sets(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="a"),
-            PermissionSet(name="b"),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="a"),
+                PermissionSet(name="b"),
+            ]
+        )
         assert set(pm.list_sets()) == {"a", "b"}
 
     def test_summary(self) -> None:
-        pm = PermissionManager([
-            PermissionSet(name="x", permissions=["a", "b"], inherit_from=["y"]),
-            PermissionSet(name="y", permissions=["c"]),
-        ])
+        pm = PermissionManager(
+            [
+                PermissionSet(name="x", permissions=["a", "b"], inherit_from=["y"]),
+                PermissionSet(name="y", permissions=["c"]),
+            ]
+        )
         s = pm.summary()
         assert s["total_sets"] == 2
         assert s["sets"]["x"]["permissions"] == 2

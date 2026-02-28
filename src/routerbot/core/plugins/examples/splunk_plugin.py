@@ -99,7 +99,9 @@ class SplunkCallbackHook(CallbackHook):
             resp = await self._client.post(self._hec_url, content=json.dumps(payload))
             if resp.status_code != 200:
                 logger.debug(
-                    "Splunk HEC returned %d for %s", resp.status_code, event_type,
+                    "Splunk HEC returned %d for %s",
+                    resp.status_code,
+                    event_type,
                 )
         except httpx.HTTPError:
             logger.debug("Failed to send event to Splunk: %s", event_type)

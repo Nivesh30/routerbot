@@ -167,10 +167,13 @@ class TestCircuitBreaker:
         assert await cb.allow_request() is False
 
     async def test_transitions_to_half_open(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=2,
-            recovery_timeout=0.05,
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=2,
+                recovery_timeout=0.05,
+            ),
+        )
         await cb.record_failure()
         await cb.record_failure()
         assert cb.state == CircuitState.OPEN
@@ -179,11 +182,14 @@ class TestCircuitBreaker:
         assert cb.state == CircuitState.HALF_OPEN
 
     async def test_half_open_allows_limited_probes(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=1,
-            recovery_timeout=0.01,
-            half_open_max_calls=2,
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                recovery_timeout=0.01,
+                half_open_max_calls=2,
+            ),
+        )
         await cb.record_failure()
         await asyncio.sleep(0.02)
         assert cb.state == CircuitState.HALF_OPEN
@@ -193,11 +199,14 @@ class TestCircuitBreaker:
         assert await cb.allow_request() is False
 
     async def test_half_open_closes_on_success(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=1,
-            recovery_timeout=0.01,
-            success_threshold=2,
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                recovery_timeout=0.01,
+                success_threshold=2,
+            ),
+        )
         await cb.record_failure()
         await asyncio.sleep(0.02)
         assert cb.state == CircuitState.HALF_OPEN
@@ -208,10 +217,13 @@ class TestCircuitBreaker:
         assert cb.state == CircuitState.CLOSED
 
     async def test_half_open_reopens_on_failure(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=1,
-            recovery_timeout=0.01,
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                recovery_timeout=0.01,
+            ),
+        )
         await cb.record_failure()
         await asyncio.sleep(0.02)
         assert cb.state == CircuitState.HALF_OPEN
@@ -229,18 +241,24 @@ class TestCircuitBreaker:
         assert cb.state == CircuitState.CLOSED
 
     async def test_excluded_exception(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=1,
-            excluded_exceptions=["ValueError"],
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                excluded_exceptions=["ValueError"],
+            ),
+        )
         await cb.record_failure(ValueError("bad input"))
         assert cb.state == CircuitState.CLOSED
 
     async def test_non_excluded_exception(self) -> None:
-        cb = CircuitBreaker("test", CircuitBreakerConfig(
-            failure_threshold=1,
-            excluded_exceptions=["ValueError"],
-        ))
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                excluded_exceptions=["ValueError"],
+            ),
+        )
         await cb.record_failure(RuntimeError("timeout"))
         assert cb.state == CircuitState.OPEN
 

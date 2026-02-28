@@ -76,9 +76,7 @@ class MCPServerRegistry:
             try:
                 await client.connect()
             except MCPClientError:
-                logger.warning(
-                    "MCP server '%s' registered but initial connection failed", name
-                )
+                logger.warning("MCP server '%s' registered but initial connection failed", name)
 
         self._clients[name] = client
         logger.info("MCP server '%s' registered (enabled=%s)", name, config.enabled)

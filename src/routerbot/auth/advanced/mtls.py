@@ -61,12 +61,12 @@ class MTLSAuthenticator:
         identity = self._parse_cert_header(cert_header)
 
         # Validate CN patterns
-        if self._cn_patterns and identity.common_name and not any(
-            p.match(identity.common_name) for p in self._cn_patterns
+        if (
+            self._cn_patterns
+            and identity.common_name
+            and not any(p.match(identity.common_name) for p in self._cn_patterns)
         ):
-                raise MTLSAuthError(
-                    f"Client CN '{identity.common_name}' does not match any allowed pattern"
-                )
+            raise MTLSAuthError(f"Client CN '{identity.common_name}' does not match any allowed pattern")
 
         # Validate SANs
         if self.config.allowed_sans:

@@ -24,7 +24,6 @@ from routerbot.core.plugins.models import (
 )
 from routerbot.core.plugins.registry import PluginRegistry
 
-
 # ── Sample concrete hooks for testing ───────────────────────────────
 
 
@@ -445,7 +444,7 @@ class TestPluginManager:
             ],
         )
         mgr = PluginManager(cfg)
-        loaded = await mgr.load_all()
+        await mgr.load_all()
 
         hook = mgr.registry.get("sample-middleware")
         assert hook is not None

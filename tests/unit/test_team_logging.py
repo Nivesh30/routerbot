@@ -111,7 +111,6 @@ def end_data() -> RequestEndData:
 
 
 class TestParseTeamLoggingConfig:
-
     def test_none_settings(self) -> None:
         config = parse_team_logging_config(None)
         assert config.disable_logging is False
@@ -131,41 +130,49 @@ class TestParseTeamLoggingConfig:
         assert config.callbacks == ["langfuse", "webhook"]
 
     def test_langfuse_credentials(self) -> None:
-        config = parse_team_logging_config({
-            "langfuse_public_key": "pk-123",
-            "langfuse_secret_key": "sk-456",
-            "langfuse_host": "https://my-langfuse.com",
-        })
+        config = parse_team_logging_config(
+            {
+                "langfuse_public_key": "pk-123",
+                "langfuse_secret_key": "sk-456",
+                "langfuse_host": "https://my-langfuse.com",
+            }
+        )
         assert config.langfuse_public_key == "pk-123"
         assert config.langfuse_secret_key == "sk-456"
         assert config.langfuse_host == "https://my-langfuse.com"
 
     def test_webhook_config(self) -> None:
-        config = parse_team_logging_config({
-            "webhook_url": "https://hooks.example.com/logs",
-            "webhook_headers": {"Authorization": "Bearer tok"},
-        })
+        config = parse_team_logging_config(
+            {
+                "webhook_url": "https://hooks.example.com/logs",
+                "webhook_headers": {"Authorization": "Bearer tok"},
+            }
+        )
         assert config.webhook_url == "https://hooks.example.com/logs"
         assert config.webhook_headers == {"Authorization": "Bearer tok"}
 
     def test_extra_keys_preserved(self) -> None:
-        config = parse_team_logging_config({
-            "callbacks": ["langfuse"],
-            "custom_key": "custom_value",
-            "another": 42,
-        })
+        config = parse_team_logging_config(
+            {
+                "callbacks": ["langfuse"],
+                "custom_key": "custom_value",
+                "another": 42,
+            }
+        )
         assert config.extra == {"custom_key": "custom_value", "another": 42}
 
     def test_full_config(self) -> None:
-        config = parse_team_logging_config({
-            "disable_logging": False,
-            "callbacks": ["spend_log"],
-            "langfuse_public_key": "pk",
-            "langfuse_secret_key": "sk",
-            "langfuse_host": "https://lf.example.com",
-            "webhook_url": "https://wh.example.com",
-            "webhook_headers": {"X-Token": "secret"},
-        })
+        config = parse_team_logging_config(
+            {
+                "disable_logging": False,
+                "callbacks": ["spend_log"],
+                "langfuse_public_key": "pk",
+                "langfuse_secret_key": "sk",
+                "langfuse_host": "https://lf.example.com",
+                "webhook_url": "https://wh.example.com",
+                "webhook_headers": {"X-Token": "secret"},
+            }
+        )
         assert config.disable_logging is False
         assert config.callbacks == ["spend_log"]
         assert config.langfuse_public_key == "pk"
@@ -179,7 +186,6 @@ class TestParseTeamLoggingConfig:
 
 
 class TestTeamCallbackManager:
-
     @pytest.mark.asyncio()
     async def test_no_team_id_uses_global(
         self,
@@ -350,7 +356,6 @@ class TestTeamCallbackManager:
 
 
 class TestTeamConfigManagement:
-
     def test_set_team_config(self, global_manager: CallbackManager) -> None:
         tcm = TeamCallbackManager(global_manager)
         config = TeamLoggingConfig(callbacks=["langfuse"])
@@ -412,7 +417,6 @@ class TestTeamConfigManagement:
 
 
 class TestTeamLoggingConfigDefaults:
-
     def test_defaults(self) -> None:
         config = TeamLoggingConfig()
         assert config.disable_logging is False

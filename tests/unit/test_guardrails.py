@@ -663,9 +663,7 @@ class TestDisabledGuardrails:
         manager.register(BlockAllGuardrail(name="block", priority=1))
         manager.register(AllowAllGuardrail(name="allow", priority=2))
 
-        result = await manager.run_request_guardrails(
-            sample_messages, context, disabled={"block"}
-        )
+        result = await manager.run_request_guardrails(sample_messages, context, disabled={"block"})
         assert result.action == GuardrailAction.ALLOW
         assert len(result.results) == 1
 
@@ -678,9 +676,7 @@ class TestDisabledGuardrails:
         """Per-request disabled set works for response guardrails too."""
         manager.register(BlockAllGuardrail(name="block"))
 
-        result = await manager.run_response_guardrails(
-            "test", context, disabled={"block"}
-        )
+        result = await manager.run_response_guardrails("test", context, disabled={"block"})
         assert result.action == GuardrailAction.ALLOW
 
 

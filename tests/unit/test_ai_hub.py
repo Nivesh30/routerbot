@@ -218,12 +218,8 @@ class TestModelHub:
         assert result[0].model_id == "a/m1"
 
     def test_list_models_filter_capability(self, hub: ModelHub) -> None:
-        hub.register_model(
-            ModelInfo(model_id="m1", capabilities=[ModelCapability.CHAT])
-        )
-        hub.register_model(
-            ModelInfo(model_id="m2", capabilities=[ModelCapability.VISION])
-        )
+        hub.register_model(ModelInfo(model_id="m1", capabilities=[ModelCapability.CHAT]))
+        hub.register_model(ModelInfo(model_id="m2", capabilities=[ModelCapability.VISION]))
         result = hub.list_models(capability=ModelCapability.VISION)
         assert len(result) == 1
         assert result[0].model_id == "m2"

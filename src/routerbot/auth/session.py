@@ -86,9 +86,7 @@ class InMemorySessionStore:
     def cleanup_expired(self) -> int:
         """Remove all expired sessions. Returns count removed."""
         now = time.monotonic()
-        expired = [
-            sid for sid, (_, exp) in self._sessions.items() if now > exp
-        ]
+        expired = [sid for sid, (_, exp) in self._sessions.items() if now > exp]
         for sid in expired:
             del self._sessions[sid]
         return len(expired)
@@ -241,9 +239,7 @@ class SessionManager:
 
         The token is a HMAC of the session ID using the secret key.
         """
-        return hashlib.sha256(
-            f"{self._config.secret_key}:{session_id}".encode()
-        ).hexdigest()
+        return hashlib.sha256(f"{self._config.secret_key}:{session_id}".encode()).hexdigest()
 
     def validate_csrf_token(self, session_id: str, token: str) -> bool:
         """Validate a CSRF token against the session."""

@@ -6,14 +6,14 @@ Uses in-memory SQLite with StaticPool.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import StaticPool
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from routerbot.auth.rbac import AuthContext, Role
 from routerbot.db.models import AuditLog, Base
@@ -67,13 +67,13 @@ async def audit_app():
 @pytest.fixture
 async def seed_audit_logs(audit_app):
     """Seed several audit log entries for query tests."""
-    app, _engine, factory = audit_app
+    _app, _engine, factory = audit_app
 
     actor_a = uuid.uuid4()
     actor_b = uuid.uuid4()
     target_1 = uuid.uuid4()
     target_2 = uuid.uuid4()
-    base_time = datetime(2025, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+    base_time = datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC)
 
     entries: list[dict[str, Any]] = [
         {
@@ -455,23 +455,27 @@ class TestRetentionCleanup:
         from routerbot.auth.audit import run_retention_cleanup
 
         _, _engine, factory = audit_app
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         async with factory() as sess:
             # Create old entry (100 days ago)
-            sess.add(AuditLog(
-                action="old.action",
-                actor_type="user",
-                target_type="key",
-                created_at=now - timedelta(days=100),
-            ))
+            sess.add(
+                AuditLog(
+                    action="old.action",
+                    actor_type="user",
+                    target_type="key",
+                    created_at=now - timedelta(days=100),
+                )
+            )
             # Create recent entry (10 days ago)
-            sess.add(AuditLog(
-                action="recent.action",
-                actor_type="user",
-                target_type="key",
-                created_at=now - timedelta(days=10),
-            ))
+            sess.add(
+                AuditLog(
+                    action="recent.action",
+                    actor_type="user",
+                    target_type="key",
+                    created_at=now - timedelta(days=10),
+                )
+            )
             await sess.commit()
 
         async with factory() as sess:
@@ -506,23 +510,27 @@ class TestRetentionCleanup:
         from routerbot.auth.audit import run_retention_cleanup
 
         _, _engine, factory = audit_app
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         async with factory() as sess:
             # 5 days old
-            sess.add(AuditLog(
-                action="five_days_old",
-                actor_type="user",
-                target_type="key",
-                created_at=now - timedelta(days=5),
-            ))
+            sess.add(
+                AuditLog(
+                    action="five_days_old",
+                    actor_type="user",
+                    target_type="key",
+                    created_at=now - timedelta(days=5),
+                )
+            )
             # 2 days old
-            sess.add(AuditLog(
-                action="two_days_old",
-                actor_type="user",
-                target_type="key",
-                created_at=now - timedelta(days=2),
-            ))
+            sess.add(
+                AuditLog(
+                    action="two_days_old",
+                    actor_type="user",
+                    target_type="key",
+                    created_at=now - timedelta(days=2),
+                )
+            )
             await sess.commit()
 
         # Retention of 3 days should only delete the 5-day-old entry

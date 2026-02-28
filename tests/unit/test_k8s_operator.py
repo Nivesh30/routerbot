@@ -410,19 +410,25 @@ class TestOperator:
 
         op = Operator()
         # Create team
-        op.apply_team(LLMTeam(
-            metadata=ObjectMeta(name="eng"),
-            spec=TeamSpec(display_name="Eng"),
-        ))
+        op.apply_team(
+            LLMTeam(
+                metadata=ObjectMeta(name="eng"),
+                spec=TeamSpec(display_name="Eng"),
+            )
+        )
         # Create keys referencing the team
-        op.apply_key(LLMKey(
-            metadata=ObjectMeta(name="k1"),
-            spec=KeySpec(owner="alice", team_ref="eng"),
-        ))
-        op.apply_key(LLMKey(
-            metadata=ObjectMeta(name="k2"),
-            spec=KeySpec(owner="bob", team_ref="eng"),
-        ))
+        op.apply_key(
+            LLMKey(
+                metadata=ObjectMeta(name="k1"),
+                spec=KeySpec(owner="alice", team_ref="eng"),
+            )
+        )
+        op.apply_key(
+            LLMKey(
+                metadata=ObjectMeta(name="k2"),
+                spec=KeySpec(owner="bob", team_ref="eng"),
+            )
+        )
         # Re-reconcile team to count keys
         team = op.get_team("default", "eng")
         assert team is not None
@@ -492,7 +498,8 @@ class TestAutoscaler:
             metadata=ObjectMeta(name="test-gw"),
             spec=GatewaySpec(
                 replicas=replicas,
-                autoscaling=autoscaling or AutoscalingSpec(
+                autoscaling=autoscaling
+                or AutoscalingSpec(
                     min_replicas=1,
                     max_replicas=10,
                     target_cpu_percent=70,

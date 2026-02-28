@@ -50,9 +50,7 @@ class Playground:
     ) -> PlaygroundSession:
         """Create a new playground session."""
         if len(self._sessions) >= self.config.max_playground_sessions:
-            raise PlaygroundCapacityError(
-                f"Max sessions reached: {self.config.max_playground_sessions}"
-            )
+            raise PlaygroundCapacityError(f"Max sessions reached: {self.config.max_playground_sessions}")
 
         session_id = f"pg_{uuid.uuid4().hex[:12]}"
         now = datetime.now(tz=UTC)

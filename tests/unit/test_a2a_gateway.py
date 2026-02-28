@@ -310,7 +310,8 @@ class TestA2AAgentRegistry:
 
         # Set agent card
         registry._clients["pub"]._agent_card = A2AAgentCard(
-            name="pub", url="http://pub:8080",
+            name="pub",
+            url="http://pub:8080",
             skills=[A2AAgentSkill(id="s1", name="S1", tags=["search"])],
         )
 
@@ -323,8 +324,10 @@ class TestA2AAgentRegistry:
         registry = A2AAgentRegistry(health_check_interval=0)
         pub = A2AAgentConfig(name="pub", url="http://pub:8080")
         priv = A2AAgentConfig(
-            name="priv", url="http://priv:8080",
-            visibility="private", allowed_teams=["data-team"],
+            name="priv",
+            url="http://priv:8080",
+            visibility="private",
+            allowed_teams=["data-team"],
         )
 
         with patch.object(A2AClient, "connect", new_callable=AsyncMock):
@@ -348,7 +351,8 @@ class TestA2AAgentRegistry:
             await registry.register_agent(config)
 
         registry._clients["test"]._agent_card = A2AAgentCard(
-            name="test", url="http://test:8080",
+            name="test",
+            url="http://test:8080",
             skills=[A2AAgentSkill(id="s1", name="S1", tags=["sql", "data"])],
         )
 
@@ -383,9 +387,7 @@ class TestA2AAgentRegistry:
     @pytest.mark.asyncio
     async def test_invoke_unknown_agent(self) -> None:
         registry = A2AAgentRegistry(health_check_interval=0)
-        result = await registry.invoke_agent(
-            A2AInvocationRequest(agent_name="unknown")
-        )
+        result = await registry.invoke_agent(A2AInvocationRequest(agent_name="unknown"))
         assert result.is_error
         assert "not found" in result.error_message
 
@@ -477,18 +479,23 @@ class TestA2ARoutes:
 
     def test_invoke_agent(self) -> None:
         registry = MagicMock()
-        registry.invoke_agent = AsyncMock(return_value=A2AInvocationResult(
-            agent_name="test",
-            status="completed",
-            messages=[A2AMessage(role="agent", content="Done!")],
-        ))
+        registry.invoke_agent = AsyncMock(
+            return_value=A2AInvocationResult(
+                agent_name="test",
+                status="completed",
+                messages=[A2AMessage(role="agent", content="Done!")],
+            )
+        )
 
         app = self._create_app(registry)
         client = TestClient(app)
-        resp = client.post("/v1/a2a/invoke", json={
-            "agent_name": "test",
-            "messages": [{"role": "user", "content": "Hello"}],
-        })
+        resp = client.post(
+            "/v1/a2a/invoke",
+            json={
+                "agent_name": "test",
+                "messages": [{"role": "user", "content": "Hello"}],
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["agent_name"] == "test"
@@ -496,18 +503,23 @@ class TestA2ARoutes:
 
     def test_invoke_agent_error(self) -> None:
         registry = MagicMock()
-        registry.invoke_agent = AsyncMock(return_value=A2AInvocationResult(
-            agent_name="test",
-            status="error",
-            is_error=True,
-            error_message="Agent crashed",
-        ))
+        registry.invoke_agent = AsyncMock(
+            return_value=A2AInvocationResult(
+                agent_name="test",
+                status="error",
+                is_error=True,
+                error_message="Agent crashed",
+            )
+        )
 
         app = self._create_app(registry)
         client = TestClient(app)
-        resp = client.post("/v1/a2a/invoke", json={
-            "agent_name": "test",
-        })
+        resp = client.post(
+            "/v1/a2a/invoke",
+            json={
+                "agent_name": "test",
+            },
+        )
         assert resp.status_code == 422
         assert resp.json()["is_error"] is True
 
@@ -515,10 +527,12 @@ class TestA2ARoutes:
         registry = MagicMock()
         registry.list_agents.return_value = [
             A2AAgentStatus(
-                name="test", url="http://test:8080",
+                name="test",
+                url="http://test:8080",
                 framework=A2AAgentFramework.GENERIC,
                 health=A2AAgentHealth.HEALTHY,
-                skills_count=3, enabled=True,
+                skills_count=3,
+                enabled=True,
             ),
         ]
 

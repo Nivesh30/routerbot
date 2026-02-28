@@ -64,8 +64,7 @@ class GCPSecretManagerBackend(SecretBackend):
             project_id, secret_id, version = parts
         else:
             msg = (
-                f"Invalid GCP secret path '{path}'. "
-                "Expected: project-id/secret-name or project-id/secret-name/version"
+                f"Invalid GCP secret path '{path}'. Expected: project-id/secret-name or project-id/secret-name/version"
             )
             raise SecretResolutionError(msg)
 

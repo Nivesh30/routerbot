@@ -80,19 +80,21 @@ async def list_tools(request: Request, body: ListToolsRequest | None = None) -> 
         team=body.team,
     )
 
-    return JSONResponse(content={
-        "tools": [
-            {
-                "name": t.name,
-                "description": t.description,
-                "server_name": t.server_name,
-                "input_schema": t.input_schema.model_dump(exclude_none=True),
-                "openai_function": t.to_openai_function(),
-            }
-            for t in tools
-        ],
-        "total": len(tools),
-    })
+    return JSONResponse(
+        content={
+            "tools": [
+                {
+                    "name": t.name,
+                    "description": t.description,
+                    "server_name": t.server_name,
+                    "input_schema": t.input_schema.model_dump(exclude_none=True),
+                    "openai_function": t.to_openai_function(),
+                }
+                for t in tools
+            ],
+            "total": len(tools),
+        }
+    )
 
 
 @router.post("/call", response_model=None)
@@ -140,10 +142,12 @@ async def list_servers(request: Request) -> JSONResponse:
         )
 
     servers = registry.list_servers()
-    return JSONResponse(content={
-        "servers": [s.model_dump() for s in servers],
-        "total": len(servers),
-    })
+    return JSONResponse(
+        content={
+            "servers": [s.model_dump() for s in servers],
+            "total": len(servers),
+        }
+    )
 
 
 @router.post("/health", response_model=None)
@@ -163,6 +167,8 @@ async def check_health(request: Request, body: HealthCheckRequest | None = None)
     body = body or HealthCheckRequest()
     results = await registry.check_health(name=body.server_name)
 
-    return JSONResponse(content={
-        "results": {name: health.value for name, health in results.items()},
-    })
+    return JSONResponse(
+        content={
+            "results": {name: health.value for name, health in results.items()},
+        }
+    )

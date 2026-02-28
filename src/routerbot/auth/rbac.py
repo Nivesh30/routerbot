@@ -100,20 +100,26 @@ class Permission(enum.StrEnum):
 # Each role maps to a frozenset of permissions.
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.ADMIN: frozenset(Permission),  # admin gets everything
-    Role.EDITOR: frozenset({
-        Permission.LLM_ACCESS,
-        Permission.KEYS_MANAGE_OWN,
-        Permission.KEYS_MANAGE_TEAM,
-        Permission.MODELS_MANAGE,
-        Permission.SPEND_VIEW_OWN,
-        Permission.GUARDRAILS_MANAGE_TEAM,
-    }),
-    Role.VIEWER: frozenset({
-        Permission.SPEND_VIEW_OWN,
-    }),
-    Role.API_USER: frozenset({
-        Permission.LLM_ACCESS,
-    }),
+    Role.EDITOR: frozenset(
+        {
+            Permission.LLM_ACCESS,
+            Permission.KEYS_MANAGE_OWN,
+            Permission.KEYS_MANAGE_TEAM,
+            Permission.MODELS_MANAGE,
+            Permission.SPEND_VIEW_OWN,
+            Permission.GUARDRAILS_MANAGE_TEAM,
+        }
+    ),
+    Role.VIEWER: frozenset(
+        {
+            Permission.SPEND_VIEW_OWN,
+        }
+    ),
+    Role.API_USER: frozenset(
+        {
+            Permission.LLM_ACCESS,
+        }
+    ),
 }
 
 

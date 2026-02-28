@@ -82,46 +82,34 @@ class TestBannedKeywordsBasic:
     """Tests for basic keyword matching."""
 
     @pytest.mark.asyncio()
-    async def test_no_keywords_no_block(
-        self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext
-    ) -> None:
+    async def test_no_keywords_no_block(self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext) -> None:
         messages = [{"role": "user", "content": "Hello, how are you?"}]
         result = await kw_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.ALLOW
 
     @pytest.mark.asyncio()
-    async def test_keyword_detected(
-        self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext
-    ) -> None:
+    async def test_keyword_detected(self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext) -> None:
         messages = [{"role": "user", "content": "This is forbidden content"}]
         result = await kw_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
         assert "forbidden" in (result.reason or "")
 
     @pytest.mark.asyncio()
-    async def test_phrase_detected(
-        self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext
-    ) -> None:
+    async def test_phrase_detected(self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext) -> None:
         messages = [{"role": "user", "content": "This is a banned phrase here"}]
         result = await kw_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
         assert "banned phrase" in (result.reason or "")
 
     @pytest.mark.asyncio()
-    async def test_multiple_keywords(
-        self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext
-    ) -> None:
-        messages = [
-            {"role": "user", "content": "forbidden and secret_word in one message"}
-        ]
+    async def test_multiple_keywords(self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext) -> None:
+        messages = [{"role": "user", "content": "forbidden and secret_word in one message"}]
         result = await kw_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
         assert result.details["match_count"] >= 2
 
     @pytest.mark.asyncio()
-    async def test_across_messages(
-        self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext
-    ) -> None:
+    async def test_across_messages(self, kw_guardrail: BannedKeywordsGuardrail, context: GuardrailContext) -> None:
         messages = [
             {"role": "system", "content": "normal system prompt"},
             {"role": "user", "content": "this is forbidden"},
@@ -161,9 +149,7 @@ class TestCaseSensitivity:
     """Tests for case-sensitive and insensitive matching."""
 
     @pytest.mark.asyncio()
-    async def test_case_insensitive_default(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_case_insensitive_default(self, context: GuardrailContext) -> None:
         guardrail = BannedKeywordsGuardrail(keywords=["BadWord"])
         messages = [{"role": "user", "content": "This has BADWORD in it"}]
         result = await guardrail.check_request(messages, context)
@@ -171,9 +157,7 @@ class TestCaseSensitivity:
 
     @pytest.mark.asyncio()
     async def test_case_sensitive(self, context: GuardrailContext) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["BadWord"], case_sensitive=True
-        )
+        guardrail = BannedKeywordsGuardrail(keywords=["BadWord"], case_sensitive=True)
         # Lowercase should not match
         messages = [{"role": "user", "content": "This has badword in it"}]
         result = await guardrail.check_request(messages, context)
@@ -194,35 +178,23 @@ class TestWordBoundary:
     """Tests for word boundary matching."""
 
     @pytest.mark.asyncio()
-    async def test_without_boundary_matches_substring(
-        self, context: GuardrailContext
-    ) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["ban"], word_boundary=False
-        )
+    async def test_without_boundary_matches_substring(self, context: GuardrailContext) -> None:
+        guardrail = BannedKeywordsGuardrail(keywords=["ban"], word_boundary=False)
         messages = [{"role": "user", "content": "This is banned"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
-    async def test_with_boundary_rejects_substring(
-        self, context: GuardrailContext
-    ) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["ban"], word_boundary=True
-        )
+    async def test_with_boundary_rejects_substring(self, context: GuardrailContext) -> None:
+        guardrail = BannedKeywordsGuardrail(keywords=["ban"], word_boundary=True)
         messages = [{"role": "user", "content": "This is banned"}]
         result = await guardrail.check_request(messages, context)
         # "ban" in "banned" — not a whole word match
         assert result.action == GuardrailAction.ALLOW
 
     @pytest.mark.asyncio()
-    async def test_with_boundary_matches_whole_word(
-        self, context: GuardrailContext
-    ) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["ban"], word_boundary=True
-        )
+    async def test_with_boundary_matches_whole_word(self, context: GuardrailContext) -> None:
+        guardrail = BannedKeywordsGuardrail(keywords=["ban"], word_boundary=True)
         messages = [{"role": "user", "content": "I will ban this"}]
         result = await guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
@@ -279,17 +251,13 @@ class TestResponseChecking:
 
     @pytest.mark.asyncio()
     async def test_response_blocked(self, context: GuardrailContext) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["bad"], check_response_content=True
-        )
+        guardrail = BannedKeywordsGuardrail(keywords=["bad"], check_response_content=True)
         result = await guardrail.check_response("This is bad", context)
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
     async def test_response_clean(self, context: GuardrailContext) -> None:
-        guardrail = BannedKeywordsGuardrail(
-            keywords=["bad"], check_response_content=True
-        )
+        guardrail = BannedKeywordsGuardrail(keywords=["bad"], check_response_content=True)
         result = await guardrail.check_response("This is fine", context)
         assert result.action == GuardrailAction.ALLOW
 
@@ -318,9 +286,7 @@ class TestBlockedUsers:
         self,
         blocked_guardrail: BlockedUsersGuardrail,
     ) -> None:
-        ctx = GuardrailContext(
-            request_id="req-1", model="gpt-4", user_id="blocked-user-1"
-        )
+        ctx = GuardrailContext(request_id="req-1", model="gpt-4", user_id="blocked-user-1")
         messages = [{"role": "user", "content": "Hello"}]
         result = await blocked_guardrail.check_request(messages, ctx)
         assert result.action == GuardrailAction.BLOCK
@@ -331,9 +297,7 @@ class TestBlockedUsers:
         self,
         blocked_guardrail: BlockedUsersGuardrail,
     ) -> None:
-        ctx = GuardrailContext(
-            request_id="req-1", model="gpt-4", team_id="blocked-team-1"
-        )
+        ctx = GuardrailContext(request_id="req-1", model="gpt-4", team_id="blocked-team-1")
         messages = [{"role": "user", "content": "Hello"}]
         result = await blocked_guardrail.check_request(messages, ctx)
         assert result.action == GuardrailAction.BLOCK
@@ -344,9 +308,7 @@ class TestBlockedUsers:
         self,
         blocked_guardrail: BlockedUsersGuardrail,
     ) -> None:
-        ctx = GuardrailContext(
-            request_id="req-1", model="gpt-4", user_id="good-user"
-        )
+        ctx = GuardrailContext(request_id="req-1", model="gpt-4", user_id="good-user")
         messages = [{"role": "user", "content": "Hello"}]
         result = await blocked_guardrail.check_request(messages, ctx)
         assert result.action == GuardrailAction.ALLOW
@@ -398,9 +360,7 @@ class TestBlockUnblock:
     @pytest.mark.asyncio()
     async def test_runtime_block_takes_effect(self) -> None:
         g = BlockedUsersGuardrail(name="blocklist")
-        ctx = GuardrailContext(
-            request_id="req-1", model="gpt-4", user_id="user-new"
-        )
+        ctx = GuardrailContext(request_id="req-1", model="gpt-4", user_id="user-new")
         messages = [{"role": "user", "content": "Hello"}]
 
         # Initially allowed
@@ -427,17 +387,11 @@ class TestIntegrationWithManager:
     """Test guardrails within the pipeline."""
 
     @pytest.mark.asyncio()
-    async def test_keyword_block_in_pipeline(
-        self, context: GuardrailContext
-    ) -> None:
+    async def test_keyword_block_in_pipeline(self, context: GuardrailContext) -> None:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
         manager = GuardrailManager()
-        manager.register(
-            BannedKeywordsGuardrail(
-                keywords=["blocked_word"], name="kw", priority=1
-            )
-        )
+        manager.register(BannedKeywordsGuardrail(keywords=["blocked_word"], name="kw", priority=1))
         messages = [{"role": "user", "content": "has blocked_word here"}]
         result = await manager.run_request_guardrails(messages, context)
         assert result.blocked
@@ -446,15 +400,9 @@ class TestIntegrationWithManager:
     async def test_blocked_user_in_pipeline(self) -> None:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
-        ctx = GuardrailContext(
-            request_id="req-1", model="gpt-4", user_id="bad-user"
-        )
+        ctx = GuardrailContext(request_id="req-1", model="gpt-4", user_id="bad-user")
         manager = GuardrailManager()
-        manager.register(
-            BlockedUsersGuardrail(
-                blocked_user_ids={"bad-user"}, name="blocklist", priority=0
-            )
-        )
+        manager.register(BlockedUsersGuardrail(blocked_user_ids={"bad-user"}, name="blocklist", priority=0))
         messages = [{"role": "user", "content": "Hello"}]
         result = await manager.run_request_guardrails(messages, ctx)
         assert result.blocked

@@ -128,29 +128,19 @@ class TestCacheEntry:
 class TestBuildCacheKey:
     """Tests for deterministic cache key generation."""
 
-    def test_same_input_same_key(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
+    def test_same_input_same_key(self, sample_messages: list[dict[str, Any]]) -> None:
         key1 = build_cache_key(model="gpt-4", messages=sample_messages)
         key2 = build_cache_key(model="gpt-4", messages=sample_messages)
         assert key1 == key2
 
-    def test_different_model_different_key(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
+    def test_different_model_different_key(self, sample_messages: list[dict[str, Any]]) -> None:
         key1 = build_cache_key(model="gpt-4", messages=sample_messages)
         key2 = build_cache_key(model="gpt-3.5-turbo", messages=sample_messages)
         assert key1 != key2
 
-    def test_different_temperature_different_key(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
-        key1 = build_cache_key(
-            model="gpt-4", messages=sample_messages, temperature=0.0
-        )
-        key2 = build_cache_key(
-            model="gpt-4", messages=sample_messages, temperature=1.0
-        )
+    def test_different_temperature_different_key(self, sample_messages: list[dict[str, Any]]) -> None:
+        key1 = build_cache_key(model="gpt-4", messages=sample_messages, temperature=0.0)
+        key2 = build_cache_key(model="gpt-4", messages=sample_messages, temperature=1.0)
         assert key1 != key2
 
     def test_different_messages_different_key(self) -> None:
@@ -160,17 +150,11 @@ class TestBuildCacheKey:
         key2 = build_cache_key(model="gpt-4", messages=m2)
         assert key1 != key2
 
-    def test_namespace_prefix(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
-        key = build_cache_key(
-            model="gpt-4", messages=sample_messages, namespace="myns"
-        )
+    def test_namespace_prefix(self, sample_messages: list[dict[str, Any]]) -> None:
+        key = build_cache_key(model="gpt-4", messages=sample_messages, namespace="myns")
         assert key.startswith("myns:cache:")
 
-    def test_with_tools(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
+    def test_with_tools(self, sample_messages: list[dict[str, Any]]) -> None:
         key1 = build_cache_key(model="gpt-4", messages=sample_messages)
         key2 = build_cache_key(
             model="gpt-4",
@@ -179,20 +163,12 @@ class TestBuildCacheKey:
         )
         assert key1 != key2
 
-    def test_with_max_tokens(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
-        key1 = build_cache_key(
-            model="gpt-4", messages=sample_messages, max_tokens=100
-        )
-        key2 = build_cache_key(
-            model="gpt-4", messages=sample_messages, max_tokens=200
-        )
+    def test_with_max_tokens(self, sample_messages: list[dict[str, Any]]) -> None:
+        key1 = build_cache_key(model="gpt-4", messages=sample_messages, max_tokens=100)
+        key2 = build_cache_key(model="gpt-4", messages=sample_messages, max_tokens=200)
         assert key1 != key2
 
-    def test_key_is_sha256(
-        self, sample_messages: list[dict[str, Any]]
-    ) -> None:
+    def test_key_is_sha256(self, sample_messages: list[dict[str, Any]]) -> None:
         key = build_cache_key(model="gpt-4", messages=sample_messages)
         # namespace:cache:<64-char hex>
         parts = key.split(":")
@@ -232,9 +208,7 @@ class TestInMemoryCacheBackend:
     @pytest.mark.asyncio()
     async def test_clear(self, memory_backend: InMemoryCacheBackend) -> None:
         for i in range(5):
-            await memory_backend.set(
-                f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i})
-            )
+            await memory_backend.set(f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i}))
         assert memory_backend.size == 5
         await memory_backend.clear()
         assert memory_backend.size == 0
@@ -243,9 +217,7 @@ class TestInMemoryCacheBackend:
     async def test_lru_eviction(self) -> None:
         backend = InMemoryCacheBackend(max_size=3, default_ttl=3600)
         for i in range(4):
-            await backend.set(
-                f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i})
-            )
+            await backend.set(f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i}))
         # k0 should have been evicted (oldest)
         assert await backend.get("k0") is None
         assert await backend.get("k1") is not None
@@ -255,9 +227,7 @@ class TestInMemoryCacheBackend:
     async def test_lru_access_updates_order(self) -> None:
         backend = InMemoryCacheBackend(max_size=3, default_ttl=3600)
         for i in range(3):
-            await backend.set(
-                f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i})
-            )
+            await backend.set(f"k{i}", CacheEntry(key=f"k{i}", response_data={"i": i}))
         # Access k0 to make it recently used
         await backend.get("k0")
         # Add k3 — should evict k1 (least recently used)
@@ -299,24 +269,16 @@ class TestInMemoryCacheBackend:
         assert stats["backend"] == "memory"
 
     @pytest.mark.asyncio()
-    async def test_overwrite_existing_key(
-        self, memory_backend: InMemoryCacheBackend
-    ) -> None:
-        await memory_backend.set(
-            "k1", CacheEntry(key="k1", response_data={"v": 1})
-        )
-        await memory_backend.set(
-            "k1", CacheEntry(key="k1", response_data={"v": 2})
-        )
+    async def test_overwrite_existing_key(self, memory_backend: InMemoryCacheBackend) -> None:
+        await memory_backend.set("k1", CacheEntry(key="k1", response_data={"v": 1}))
+        await memory_backend.set("k1", CacheEntry(key="k1", response_data={"v": 2}))
         result = await memory_backend.get("k1")
         assert result is not None
         assert result.response_data == {"v": 2}
         assert memory_backend.size == 1
 
     @pytest.mark.asyncio()
-    async def test_delete_nonexistent(
-        self, memory_backend: InMemoryCacheBackend
-    ) -> None:
+    async def test_delete_nonexistent(self, memory_backend: InMemoryCacheBackend) -> None:
         # Should not raise
         await memory_backend.delete("nope")
 
@@ -358,21 +320,15 @@ class TestRedisCacheBackend:
         assert redis_backend.misses == 1
 
     @pytest.mark.asyncio()
-    async def test_set_with_ttl(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
-        entry = CacheEntry(
-            key="k1", response_data={"x": 1}, model="gpt-4"
-        )
+    async def test_set_with_ttl(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
+        entry = CacheEntry(key="k1", response_data={"x": 1}, model="gpt-4")
         await redis_backend.set("k1", entry, ttl=120)
         mock_redis.setex.assert_awaited_once()
         args = mock_redis.setex.call_args[0]
         assert args[1] == 120  # TTL
 
     @pytest.mark.asyncio()
-    async def test_set_without_ttl(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_set_without_ttl(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         from routerbot.cache.redis import RedisCacheBackend
 
         backend = RedisCacheBackend(
@@ -386,9 +342,7 @@ class TestRedisCacheBackend:
         mock_redis.set.assert_awaited()
 
     @pytest.mark.asyncio()
-    async def test_get_hit(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_get_hit(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         import json
 
         stored = {
@@ -406,42 +360,30 @@ class TestRedisCacheBackend:
         assert redis_backend.hits == 1
 
     @pytest.mark.asyncio()
-    async def test_delete(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_delete(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         await redis_backend.delete("k1")
         mock_redis.delete.assert_awaited_once()
 
     @pytest.mark.asyncio()
-    async def test_clear(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
-        mock_redis.scan = AsyncMock(
-            return_value=(0, ["test:cache:k1", "test:cache:k2"])
-        )
+    async def test_clear(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
+        mock_redis.scan = AsyncMock(return_value=(0, ["test:cache:k1", "test:cache:k2"]))
         await redis_backend.clear()
         mock_redis.delete.assert_awaited()
 
     @pytest.mark.asyncio()
-    async def test_close(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_close(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         await redis_backend.close()
         mock_redis.close.assert_awaited_once()
 
     @pytest.mark.asyncio()
-    async def test_get_error_returns_none(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_get_error_returns_none(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         mock_redis.get = AsyncMock(side_effect=ConnectionError("offline"))
         result = await redis_backend.get("k1")
         assert result is None
         assert redis_backend.misses == 1
 
     @pytest.mark.asyncio()
-    async def test_set_error_silent(
-        self, redis_backend: Any, mock_redis: AsyncMock
-    ) -> None:
+    async def test_set_error_silent(self, redis_backend: Any, mock_redis: AsyncMock) -> None:
         mock_redis.setex = AsyncMock(side_effect=ConnectionError("offline"))
         entry = CacheEntry(key="k1", response_data={"x": 1})
         # Should not raise
@@ -529,9 +471,7 @@ class TestResponseCacheManager:
         sample_messages: list[dict[str, Any]],
         sample_response_data: dict[str, Any],
     ) -> None:
-        manager = ResponseCacheManager(
-            backend=memory_backend, skip_streaming=False, namespace="test"
-        )
+        manager = ResponseCacheManager(backend=memory_backend, skip_streaming=False, namespace="test")
         await manager.store(
             model="gpt-4",
             messages=sample_messages,
@@ -645,12 +585,8 @@ class TestResponseCacheManager:
             temperature=1.0,
         )
 
-        r1 = await cache_manager.lookup(
-            model="gpt-4", messages=sample_messages, temperature=0.0
-        )
-        r2 = await cache_manager.lookup(
-            model="gpt-4", messages=sample_messages, temperature=1.0
-        )
+        r1 = await cache_manager.lookup(model="gpt-4", messages=sample_messages, temperature=0.0)
+        r2 = await cache_manager.lookup(model="gpt-4", messages=sample_messages, temperature=1.0)
         assert r1 is not None
         assert r2 is not None
         assert r1.response_data != r2.response_data
@@ -675,8 +611,6 @@ class TestResponseCacheManager:
             response_data={"x": 1},
             metadata={"cost": 0.01, "tokens": 15},
         )
-        result = await cache_manager.lookup(
-            model="gpt-4", messages=sample_messages
-        )
+        result = await cache_manager.lookup(model="gpt-4", messages=sample_messages)
         assert result is not None
         assert result.metadata["cost"] == 0.01

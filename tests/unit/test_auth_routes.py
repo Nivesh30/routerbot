@@ -35,9 +35,7 @@ async def client() -> AsyncClient:
     """Async test client with a configured app."""
     config = _make_config()
     test_app = create_app(config=config)
-    async with AsyncClient(
-        transport=ASGITransport(app=test_app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         yield ac
 
 
@@ -85,9 +83,7 @@ class TestAuthLogin:
     @pytest.mark.anyio()
     async def test_login_master_key_with_whitespace(self, client: AsyncClient) -> None:
         """Login trims whitespace from the key."""
-        resp = await client.post(
-            "/auth/login", json={"key": f"  {TEST_MASTER_KEY}  "}
-        )
+        resp = await client.post("/auth/login", json={"key": f"  {TEST_MASTER_KEY}  "})
         assert resp.status_code == 200
         assert resp.json()["role"] == "admin"
 
@@ -161,9 +157,7 @@ class TestAuthMe:
     @pytest.mark.anyio()
     async def test_me_response_matches_login(self, client: AsyncClient) -> None:
         """GET /auth/me returns the same info as login."""
-        login_resp = await client.post(
-            "/auth/login", json={"key": TEST_MASTER_KEY}
-        )
+        login_resp = await client.post("/auth/login", json={"key": TEST_MASTER_KEY})
         me_resp = await client.get(
             "/auth/me",
             headers={"Authorization": f"Bearer {TEST_MASTER_KEY}"},

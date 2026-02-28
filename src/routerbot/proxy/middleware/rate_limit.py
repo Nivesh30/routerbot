@@ -112,15 +112,11 @@ class RateLimitResult:
         if self.limit_requests is not None:
             headers["X-RateLimit-Limit-Requests"] = str(self.limit_requests)
         if self.remaining_requests is not None:
-            headers["X-RateLimit-Remaining-Requests"] = str(
-                max(0, self.remaining_requests)
-            )
+            headers["X-RateLimit-Remaining-Requests"] = str(max(0, self.remaining_requests))
         if self.limit_tokens is not None:
             headers["X-RateLimit-Limit-Tokens"] = str(self.limit_tokens)
         if self.remaining_tokens is not None:
-            headers["X-RateLimit-Remaining-Tokens"] = str(
-                max(0, self.remaining_tokens)
-            )
+            headers["X-RateLimit-Remaining-Tokens"] = str(max(0, self.remaining_tokens))
         if self.reset_at is not None:
             headers["X-RateLimit-Reset"] = str(int(self.reset_at))
         if not self.allowed and self.retry_after is not None:
@@ -208,9 +204,7 @@ class InMemoryRateLimiter:
         self._model_configs = dict(model_configs) if model_configs else {}
 
         # Sliding window state keyed by (scope, identifier)
-        self._windows: dict[tuple[str, str], _WindowEntry] = defaultdict(
-            _WindowEntry
-        )
+        self._windows: dict[tuple[str, str], _WindowEntry] = defaultdict(_WindowEntry)
 
     # ------------------------------------------------------------------
     # Public API
@@ -238,9 +232,7 @@ class InMemoryRateLimiter:
         tightest = RateLimitResult(allowed=True)
 
         # --- Global ---
-        result = self._check_scope(
-            RateLimitScope.GLOBAL, "global", self._global_config, minute, now
-        )
+        result = self._check_scope(RateLimitScope.GLOBAL, "global", self._global_config, minute, now)
         if not result.allowed:
             return result
         tightest = self._merge_tightest(tightest, result)
@@ -248,9 +240,7 @@ class InMemoryRateLimiter:
         # --- Model ---
         if model:
             cfg = self._model_configs.get(model, RateLimitConfig())
-            result = self._check_scope(
-                RateLimitScope.MODEL, model, cfg, minute, now
-            )
+            result = self._check_scope(RateLimitScope.MODEL, model, cfg, minute, now)
             if not result.allowed:
                 return result
             tightest = self._merge_tightest(tightest, result)
@@ -258,9 +248,7 @@ class InMemoryRateLimiter:
         # --- Team ---
         if team_id:
             cfg = self._team_configs.get(team_id, RateLimitConfig())
-            result = self._check_scope(
-                RateLimitScope.TEAM, team_id, cfg, minute, now
-            )
+            result = self._check_scope(RateLimitScope.TEAM, team_id, cfg, minute, now)
             if not result.allowed:
                 return result
             tightest = self._merge_tightest(tightest, result)
@@ -268,9 +256,7 @@ class InMemoryRateLimiter:
         # --- Key ---
         if key_id:
             cfg = self._key_configs.get(key_id, self._default_key_config)
-            result = self._check_scope(
-                RateLimitScope.KEY, key_id, cfg, minute, now
-            )
+            result = self._check_scope(RateLimitScope.KEY, key_id, cfg, minute, now)
             if not result.allowed:
                 return result
             tightest = self._merge_tightest(tightest, result)
@@ -278,9 +264,7 @@ class InMemoryRateLimiter:
         # --- User ---
         if user_id:
             cfg = self._user_configs.get(user_id, RateLimitConfig())
-            result = self._check_scope(
-                RateLimitScope.USER, user_id, cfg, minute, now
-            )
+            result = self._check_scope(RateLimitScope.USER, user_id, cfg, minute, now)
             if not result.allowed:
                 return result
             tightest = self._merge_tightest(tightest, result)
@@ -347,7 +331,9 @@ class InMemoryRateLimiter:
 
         result = RateLimitResult(
             allowed=True,
-            scope=RateLimitScope(scope) if isinstance(scope, str) and scope in {s.value for s in RateLimitScope} else None,
+            scope=RateLimitScope(scope)
+            if isinstance(scope, str) and scope in {s.value for s in RateLimitScope}
+            else None,
             reset_at=reset_at,
         )
 
@@ -358,7 +344,11 @@ class InMemoryRateLimiter:
             if req_count >= config.rpm:
                 result.allowed = False
                 result.retry_after = self._time_until_slot(entry.timestamps, window)
-                result.scope = RateLimitScope(scope) if isinstance(scope, str) and scope in {s.value for s in RateLimitScope} else None
+                result.scope = (
+                    RateLimitScope(scope)
+                    if isinstance(scope, str) and scope in {s.value for s in RateLimitScope}
+                    else None
+                )
                 return result
 
         # TPM check
@@ -367,10 +357,12 @@ class InMemoryRateLimiter:
             result.remaining_tokens = config.tpm - tok_count
             if tok_count >= config.tpm:
                 result.allowed = False
-                result.retry_after = self._time_until_token_slot(
-                    entry.token_records, window
+                result.retry_after = self._time_until_token_slot(entry.token_records, window)
+                result.scope = (
+                    RateLimitScope(scope)
+                    if isinstance(scope, str) and scope in {s.value for s in RateLimitScope}
+                    else None
                 )
-                result.scope = RateLimitScope(scope) if isinstance(scope, str) and scope in {s.value for s in RateLimitScope} else None
                 return result
 
         return result
@@ -384,18 +376,14 @@ class InMemoryRateLimiter:
         return max(0.0, (oldest + window) - time.time())
 
     @staticmethod
-    def _time_until_token_slot(
-        records: list[tuple[float, int]], window: float
-    ) -> float:
+    def _time_until_token_slot(records: list[tuple[float, int]], window: float) -> float:
         """Calculate seconds until token count drops below the limit."""
         if not records:
             return 0.0
         oldest = min(t for t, _ in records)
         return max(0.0, (oldest + window) - time.time())
 
-    def _record_scope(
-        self, scope: RateLimitScope | str, identifier: str, tokens: int
-    ) -> None:
+    def _record_scope(self, scope: RateLimitScope | str, identifier: str, tokens: int) -> None:
         """Record a request+tokens for a given scope/identifier."""
         entry = self._windows[(str(scope), identifier)]
         entry.record_request()
@@ -403,34 +391,22 @@ class InMemoryRateLimiter:
             entry.record_tokens(tokens)
 
     @staticmethod
-    def _merge_tightest(
-        current: RateLimitResult, candidate: RateLimitResult
-    ) -> RateLimitResult:
+    def _merge_tightest(current: RateLimitResult, candidate: RateLimitResult) -> RateLimitResult:
         """Merge two results keeping the tightest limits."""
         # Pick the one with fewer remaining requests
-        if (
-            candidate.remaining_requests is not None
-            and (
-                current.remaining_requests is None
-                or candidate.remaining_requests < current.remaining_requests
-            )
+        if candidate.remaining_requests is not None and (
+            current.remaining_requests is None or candidate.remaining_requests < current.remaining_requests
         ):
             current.limit_requests = candidate.limit_requests
             current.remaining_requests = candidate.remaining_requests
 
-        if (
-            candidate.remaining_tokens is not None
-            and (
-                current.remaining_tokens is None
-                or candidate.remaining_tokens < current.remaining_tokens
-            )
+        if candidate.remaining_tokens is not None and (
+            current.remaining_tokens is None or candidate.remaining_tokens < current.remaining_tokens
         ):
             current.limit_tokens = candidate.limit_tokens
             current.remaining_tokens = candidate.remaining_tokens
 
-        if candidate.reset_at is not None and (
-            current.reset_at is None or candidate.reset_at < current.reset_at
-        ):
+        if candidate.reset_at is not None and (current.reset_at is None or candidate.reset_at < current.reset_at):
             current.reset_at = candidate.reset_at
 
         return current

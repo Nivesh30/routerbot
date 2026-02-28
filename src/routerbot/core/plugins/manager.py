@@ -218,7 +218,8 @@ class PluginManager:
             class_name = plugin_decl.get("class", "")
             if not module_path or not class_name:
                 logger.warning(
-                    "Plugin '%s' missing 'module' or 'class' — skipping", name,
+                    "Plugin '%s' missing 'module' or 'class' — skipping",
+                    name,
                 )
                 continue
 

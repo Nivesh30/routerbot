@@ -152,7 +152,6 @@ def error_data() -> RequestErrorData:
 
 
 class TestCreateTracerProvider:
-
     def test_default_always_on(self, exporter: InMemorySpanExporter) -> None:
         prov = create_tracer_provider(sampling_rate=1.0, exporter=exporter, use_batch_processor=False)
         assert prov.sampler is ALWAYS_ON
@@ -191,7 +190,6 @@ class TestCreateTracerProvider:
 
 
 class TestOpenTelemetryCallback:
-
     @pytest.mark.asyncio()
     async def test_request_start_creates_span(
         self,
@@ -462,7 +460,6 @@ class TestOpenTelemetryCallback:
 
 
 class TestCreateOtelCallback:
-
     def test_creates_callback_with_provider(self) -> None:
         cb = create_otel_callback(
             service_name="test-svc",

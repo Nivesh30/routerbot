@@ -79,7 +79,11 @@ class RecommendationEngine:
     ) -> None:
         """Record a single request event."""
         self._analyser.record_request(
-            model, tokens=tokens, cost=cost, latency_ms=latency_ms, is_error=is_error,
+            model,
+            tokens=tokens,
+            cost=cost,
+            latency_ms=latency_ms,
+            is_error=is_error,
         )
 
     def take_snapshots(self) -> None:

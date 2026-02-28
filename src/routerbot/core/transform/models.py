@@ -56,8 +56,7 @@ class PromptTemplate(BaseModel):
     content: str
     position: str = Field(
         default="prepend",
-        description="'prepend' adds before existing system prompt; "
-        "'append' adds after; 'replace' overwrites it.",
+        description="'prepend' adds before existing system prompt; 'append' adds after; 'replace' overwrites it.",
     )
     # Scope filters (all optional — omit to make it global)
     team_ids: list[str] = Field(default_factory=list)

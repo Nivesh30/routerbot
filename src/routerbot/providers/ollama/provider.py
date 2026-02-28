@@ -113,7 +113,7 @@ class OllamaProvider(BaseProvider):
             }
             # Pass through images if present (Ollama multimodal support)
             if hasattr(msg, "images") and getattr(msg, "images", None):
-                m["images"] = getattr(msg, "images")
+                m["images"] = msg.images
             messages.append(m)
 
         payload: dict[str, Any] = {

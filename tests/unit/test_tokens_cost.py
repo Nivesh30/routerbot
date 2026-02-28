@@ -169,11 +169,14 @@ class TestModelRegistry:
         assert "claude-3-opus-20240229" in models
 
     def test_register_custom_model(self) -> None:
-        register_custom_model("my-custom-model", {
-            "max_input_tokens": 4096,
-            "input_cost_per_token": 1e-06,
-            "output_cost_per_token": 2e-06,
-        })
+        register_custom_model(
+            "my-custom-model",
+            {
+                "max_input_tokens": 4096,
+                "input_cost_per_token": 1e-06,
+                "output_cost_per_token": 2e-06,
+            },
+        )
         info = get_model_info("my-custom-model")
         assert info is not None
         assert info["max_input_tokens"] == 4096

@@ -215,11 +215,7 @@ class TeamCallbackManager:
                 continue
             handler = getattr(cb, method_name, None)
             if handler is not None:
-                tasks.append(
-                    asyncio.create_task(
-                        CallbackManager._safe_call(name, event, handler, data)
-                    )
-                )
+                tasks.append(asyncio.create_task(CallbackManager._safe_call(name, event, handler, data)))
 
         if tasks:
             await asyncio.gather(*tasks)

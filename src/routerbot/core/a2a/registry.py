@@ -119,9 +119,7 @@ class A2AAgentRegistry:
                 continue
 
             # Skill tag filter
-            if skill_tag and not any(
-                skill_tag in skill.tags for skill in card.skills
-            ):
+            if skill_tag and not any(skill_tag in skill.tags for skill in card.skills):
                 continue
 
             cards.append(card)

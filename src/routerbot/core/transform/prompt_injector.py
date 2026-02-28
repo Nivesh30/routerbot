@@ -86,9 +86,7 @@ class PromptInjector(TransformHook):
 
             elif template.position == "replace":
                 # Remove all existing system messages, prepend this one
-                data["messages"] = [
-                    m for m in messages if m.get("role") != "system"
-                ]
+                data["messages"] = [m for m in messages if m.get("role") != "system"]
                 data["messages"].insert(0, {"role": "system", "content": template.content})
                 messages = data["messages"]
                 modified = True

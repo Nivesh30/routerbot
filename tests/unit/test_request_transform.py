@@ -139,9 +139,11 @@ def _ctx(**kw: Any) -> TransformContext:
 class TestPromptInjectorPrepend:
     @pytest.mark.asyncio
     async def test_prepend_system_message(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="safety", content="You are a safe assistant."),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="safety", content="You are a safe assistant."),
+            ]
+        )
         data: dict[str, Any] = {
             "messages": [
                 {"role": "user", "content": "Hello"},
@@ -155,9 +157,11 @@ class TestPromptInjectorPrepend:
 
     @pytest.mark.asyncio
     async def test_prepend_before_existing_system(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="safety", content="Injected"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="safety", content="Injected"),
+            ]
+        )
         data: dict[str, Any] = {
             "messages": [
                 {"role": "system", "content": "Existing"},
@@ -172,9 +176,11 @@ class TestPromptInjectorPrepend:
 class TestPromptInjectorAppend:
     @pytest.mark.asyncio
     async def test_append_after_system_message(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="context", content="Extra context", position="append"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="context", content="Extra context", position="append"),
+            ]
+        )
         data: dict[str, Any] = {
             "messages": [
                 {"role": "system", "content": "Main system prompt"},
@@ -188,9 +194,11 @@ class TestPromptInjectorAppend:
 
     @pytest.mark.asyncio
     async def test_append_with_no_system_inserts_at_start(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="ctx", content="Context", position="append"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="ctx", content="Context", position="append"),
+            ]
+        )
         data: dict[str, Any] = {
             "messages": [{"role": "user", "content": "Hello"}],
         }
@@ -201,9 +209,11 @@ class TestPromptInjectorAppend:
 class TestPromptInjectorReplace:
     @pytest.mark.asyncio
     async def test_replace_existing_system_messages(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="override", content="New system prompt", position="replace"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="override", content="New system prompt", position="replace"),
+            ]
+        )
         data: dict[str, Any] = {
             "messages": [
                 {"role": "system", "content": "Old prompt 1"},
@@ -220,54 +230,66 @@ class TestPromptInjectorReplace:
 class TestPromptInjectorScoping:
     @pytest.mark.asyncio
     async def test_team_scope_match(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="team", content="Team prompt", team_ids=["team-a"]),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="team", content="Team prompt", team_ids=["team-a"]),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(team_id="team-a"))
         assert result.modified is True
 
     @pytest.mark.asyncio
     async def test_team_scope_no_match(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="team", content="Team prompt", team_ids=["team-a"]),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="team", content="Team prompt", team_ids=["team-a"]),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(team_id="team-b"))
         assert result.modified is False
 
     @pytest.mark.asyncio
     async def test_key_scope_match(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="key", content="Key prompt", key_ids=["key-1"]),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="key", content="Key prompt", key_ids=["key-1"]),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(key_id="key-1"))
         assert result.modified is True
 
     @pytest.mark.asyncio
     async def test_model_scope_match(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="model", content="Model prompt", models=["gpt-4o"]),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="model", content="Model prompt", models=["gpt-4o"]),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(model="gpt-4o"))
         assert result.modified is True
 
     @pytest.mark.asyncio
     async def test_model_scope_no_match(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="model", content="Model prompt", models=["gpt-4o"]),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="model", content="Model prompt", models=["gpt-4o"]),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(model="claude-3"))
         assert result.modified is False
 
     @pytest.mark.asyncio
     async def test_disabled_template(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="off", content="Disabled", enabled=False),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="off", content="Disabled", enabled=False),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx())
         assert result.modified is False
@@ -275,9 +297,11 @@ class TestPromptInjectorScoping:
     @pytest.mark.asyncio
     async def test_global_scope(self) -> None:
         """Templates with no scope filters apply to everything."""
-        injector = PromptInjector([
-            PromptTemplate(name="global", content="Global prompt"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="global", content="Global prompt"),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await injector.apply(data, _ctx(team_id="any", model="any"))
         assert result.modified is True
@@ -286,10 +310,12 @@ class TestPromptInjectorScoping:
 class TestPromptInjectorPriority:
     @pytest.mark.asyncio
     async def test_higher_priority_first(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="low", content="Low", priority=10),
-            PromptTemplate(name="high", content="High", priority=100),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="low", content="Low", priority=10),
+                PromptTemplate(name="high", content="High", priority=100),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         await injector.apply(data, _ctx())
         # High priority prepends first (index 0), then low prepends before it
@@ -300,18 +326,22 @@ class TestPromptInjectorPriority:
 class TestPromptInjectorEdgeCases:
     @pytest.mark.asyncio
     async def test_empty_messages(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="t", content="test"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="t", content="test"),
+            ]
+        )
         data: dict[str, Any] = {"messages": []}
         result = await injector.apply(data, _ctx())
         assert result.modified is False
 
     @pytest.mark.asyncio
     async def test_no_messages_key(self) -> None:
-        injector = PromptInjector([
-            PromptTemplate(name="t", content="test"),
-        ])
+        injector = PromptInjector(
+            [
+                PromptTemplate(name="t", content="test"),
+            ]
+        )
         data: dict[str, Any] = {}
         result = await injector.apply(data, _ctx())
         assert result.modified is False
@@ -330,9 +360,11 @@ class TestPromptInjectorEdgeCases:
 class TestRequestEnricherStatic:
     @pytest.mark.asyncio
     async def test_static_prepend(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="ctx", source_type="static", content="Extra context"),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="ctx", source_type="static", content="Extra context"),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         result = await enricher.apply(data, _ctx())
         assert result.modified is True
@@ -341,11 +373,16 @@ class TestRequestEnricherStatic:
 
     @pytest.mark.asyncio
     async def test_static_append(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(
-                name="ctx", source_type="static", content="Extra", position="append",
-            ),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(
+                    name="ctx",
+                    source_type="static",
+                    content="Extra",
+                    position="append",
+                ),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         result = await enricher.apply(data, _ctx())
         assert result.modified is True
@@ -353,9 +390,11 @@ class TestRequestEnricherStatic:
 
     @pytest.mark.asyncio
     async def test_static_none_content_skipped(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="empty", source_type="static", content=None),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="empty", source_type="static", content=None),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         result = await enricher.apply(data, _ctx())
         assert result.modified is False
@@ -364,11 +403,15 @@ class TestRequestEnricherStatic:
 class TestRequestEnricherHeader:
     @pytest.mark.asyncio
     async def test_header_source(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(
-                name="hdr", source_type="header", header_name="X-Custom-Context",
-            ),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(
+                    name="hdr",
+                    source_type="header",
+                    header_name="X-Custom-Context",
+                ),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         ctx = _ctx(metadata={"headers": {"X-Custom-Context": "Custom context value"}})
         result = await enricher.apply(data, ctx)
@@ -377,9 +420,11 @@ class TestRequestEnricherHeader:
 
     @pytest.mark.asyncio
     async def test_header_missing(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="hdr", source_type="header", header_name="X-Missing"),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="hdr", source_type="header", header_name="X-Missing"),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         result = await enricher.apply(data, _ctx(metadata={"headers": {}}))
         assert result.modified is False
@@ -388,9 +433,11 @@ class TestRequestEnricherHeader:
 class TestRequestEnricherMetadata:
     @pytest.mark.asyncio
     async def test_metadata_source(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="meta", source_type="metadata", metadata_key="org_context"),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="meta", source_type="metadata", metadata_key="org_context"),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hello"}]}
         ctx = _ctx(metadata={"org_context": "We are an e-commerce company."})
         result = await enricher.apply(data, ctx)
@@ -401,42 +448,54 @@ class TestRequestEnricherMetadata:
 class TestRequestEnricherScoping:
     @pytest.mark.asyncio
     async def test_team_scope_match(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(
-                name="team-ctx", source_type="static", content="Team info",
-                team_ids=["team-a"],
-            ),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(
+                    name="team-ctx",
+                    source_type="static",
+                    content="Team info",
+                    team_ids=["team-a"],
+                ),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await enricher.apply(data, _ctx(team_id="team-a"))
         assert result.modified is True
 
     @pytest.mark.asyncio
     async def test_team_scope_no_match(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(
-                name="team-ctx", source_type="static", content="Team info",
-                team_ids=["team-a"],
-            ),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(
+                    name="team-ctx",
+                    source_type="static",
+                    content="Team info",
+                    team_ids=["team-a"],
+                ),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await enricher.apply(data, _ctx(team_id="team-b"))
         assert result.modified is False
 
     @pytest.mark.asyncio
     async def test_disabled_source_filtered(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="off", source_type="static", content="x", enabled=False),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="off", source_type="static", content="x", enabled=False),
+            ]
+        )
         data: dict[str, Any] = {"messages": [{"role": "user", "content": "Hi"}]}
         result = await enricher.apply(data, _ctx())
         assert result.modified is False
 
     def test_sources_property(self) -> None:
-        enricher = RequestEnricher([
-            EnrichmentSource(name="a", source_type="static", content="x"),
-            EnrichmentSource(name="b", source_type="static", content="y", enabled=False),
-        ])
+        enricher = RequestEnricher(
+            [
+                EnrichmentSource(name="a", source_type="static", content="x"),
+                EnrichmentSource(name="b", source_type="static", content="y", enabled=False),
+            ]
+        )
         assert len(enricher.sources) == 1  # disabled one filtered out
 
 
@@ -448,15 +507,19 @@ class TestRequestEnricherScoping:
 class TestPostProcessorStripThinking:
     @pytest.mark.asyncio
     async def test_strip_thinking_blocks(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="strip", action="strip_thinking"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="strip", action="strip_thinking"),
+            ]
+        )
         data: dict[str, Any] = {
-            "choices": [{
-                "message": {
-                    "content": "<thinking>Internal reasoning here</thinking>The answer is 42.",
-                },
-            }],
+            "choices": [
+                {
+                    "message": {
+                        "content": "<thinking>Internal reasoning here</thinking>The answer is 42.",
+                    },
+                }
+            ],
         }
         result = await pp.apply(data, _ctx())
         assert result.modified is True
@@ -464,24 +527,30 @@ class TestPostProcessorStripThinking:
 
     @pytest.mark.asyncio
     async def test_strip_thinking_multiline(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="strip", action="strip_thinking"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="strip", action="strip_thinking"),
+            ]
+        )
         data: dict[str, Any] = {
-            "choices": [{
-                "message": {
-                    "content": "<thinking>\nLine 1\nLine 2\n</thinking>\nResult here.",
-                },
-            }],
+            "choices": [
+                {
+                    "message": {
+                        "content": "<thinking>\nLine 1\nLine 2\n</thinking>\nResult here.",
+                    },
+                }
+            ],
         }
         await pp.apply(data, _ctx())
         assert data["choices"][0]["message"]["content"] == "Result here."
 
     @pytest.mark.asyncio
     async def test_strip_thinking_no_blocks(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="strip", action="strip_thinking"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="strip", action="strip_thinking"),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "No thinking blocks"}}],
         }
@@ -492,14 +561,16 @@ class TestPostProcessorStripThinking:
 class TestPostProcessorRegexReplace:
     @pytest.mark.asyncio
     async def test_regex_replace(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(
-                name="redact",
-                action="regex_replace",
-                pattern=r"\b\d{3}-\d{2}-\d{4}\b",
-                replacement="[REDACTED]",
-            ),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(
+                    name="redact",
+                    action="regex_replace",
+                    pattern=r"\b\d{3}-\d{2}-\d{4}\b",
+                    replacement="[REDACTED]",
+                ),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "SSN: 123-45-6789"}}],
         }
@@ -509,11 +580,16 @@ class TestPostProcessorRegexReplace:
 
     @pytest.mark.asyncio
     async def test_regex_replace_no_match(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(
-                name="redact", action="regex_replace", pattern=r"ZZZZZ", replacement="X",
-            ),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(
+                    name="redact",
+                    action="regex_replace",
+                    pattern=r"ZZZZZ",
+                    replacement="X",
+                ),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "Nothing to replace"}}],
         }
@@ -522,9 +598,11 @@ class TestPostProcessorRegexReplace:
 
     @pytest.mark.asyncio
     async def test_regex_replace_no_pattern(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="bad", action="regex_replace"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="bad", action="regex_replace"),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "Hello"}}],
         }
@@ -535,9 +613,11 @@ class TestPostProcessorRegexReplace:
 class TestPostProcessorTruncate:
     @pytest.mark.asyncio
     async def test_truncate(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="trunc", action="truncate", max_chars=10),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="trunc", action="truncate", max_chars=10),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "A" * 100}}],
         }
@@ -547,9 +627,11 @@ class TestPostProcessorTruncate:
 
     @pytest.mark.asyncio
     async def test_truncate_short_content(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="trunc", action="truncate", max_chars=100),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="trunc", action="truncate", max_chars=100),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "Short"}}],
         }
@@ -558,9 +640,11 @@ class TestPostProcessorTruncate:
 
     @pytest.mark.asyncio
     async def test_truncate_no_max_chars(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="trunc", action="truncate"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="trunc", action="truncate"),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "A" * 1000}}],
         }
@@ -571,13 +655,15 @@ class TestPostProcessorTruncate:
 class TestPostProcessorAddMetadata:
     @pytest.mark.asyncio
     async def test_add_metadata(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(
-                name="meta",
-                action="add_metadata",
-                metadata_pairs={"version": "1.0", "processed": "true"},
-            ),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(
+                    name="meta",
+                    action="add_metadata",
+                    metadata_pairs={"version": "1.0", "processed": "true"},
+                ),
+            ]
+        )
         data: dict[str, Any] = {"choices": []}
         result = await pp.apply(data, _ctx())
         assert result.modified is True
@@ -586,9 +672,11 @@ class TestPostProcessorAddMetadata:
 
     @pytest.mark.asyncio
     async def test_add_metadata_empty_pairs(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="meta", action="add_metadata"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="meta", action="add_metadata"),
+            ]
+        )
         data: dict[str, Any] = {"choices": []}
         result = await pp.apply(data, _ctx())
         assert result.modified is False
@@ -597,11 +685,15 @@ class TestPostProcessorAddMetadata:
 class TestPostProcessorScoping:
     @pytest.mark.asyncio
     async def test_team_scope_match(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(
-                name="team-strip", action="strip_thinking", team_ids=["team-a"],
-            ),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(
+                    name="team-strip",
+                    action="strip_thinking",
+                    team_ids=["team-a"],
+                ),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "<thinking>x</thinking>y"}}],
         }
@@ -610,11 +702,15 @@ class TestPostProcessorScoping:
 
     @pytest.mark.asyncio
     async def test_team_scope_no_match(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(
-                name="team-strip", action="strip_thinking", team_ids=["team-a"],
-            ),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(
+                    name="team-strip",
+                    action="strip_thinking",
+                    team_ids=["team-a"],
+                ),
+            ]
+        )
         data: dict[str, Any] = {
             "choices": [{"message": {"content": "<thinking>x</thinking>y"}}],
         }
@@ -622,19 +718,23 @@ class TestPostProcessorScoping:
         assert result.modified is False
 
     def test_rules_property(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="a", action="strip_thinking"),
-            PostProcessingRule(name="b", action="truncate", enabled=False),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="a", action="strip_thinking"),
+                PostProcessingRule(name="b", action="truncate", enabled=False),
+            ]
+        )
         assert len(pp.rules) == 1  # disabled one filtered
 
 
 class TestPostProcessorUnknownAction:
     @pytest.mark.asyncio
     async def test_unknown_action(self) -> None:
-        pp = ResponsePostProcessor([
-            PostProcessingRule(name="x", action="unknown_action"),
-        ])
+        pp = ResponsePostProcessor(
+            [
+                PostProcessingRule(name="x", action="unknown_action"),
+            ]
+        )
         data: dict[str, Any] = {"choices": []}
         result = await pp.apply(data, _ctx())
         assert result.modified is False
@@ -658,7 +758,9 @@ class _DummyPreHook(TransformHook):
         return TransformStage.PRE_REQUEST
 
     async def apply(
-        self, data: dict[str, Any], context: TransformContext,
+        self,
+        data: dict[str, Any],
+        context: TransformContext,
     ) -> TransformResult:
         data["modified_by_pre"] = True
         return TransformResult(modified=True, metadata={"hook": self._name})
@@ -674,7 +776,9 @@ class _DummyPostHook(TransformHook):
         return TransformStage.POST_RESPONSE
 
     async def apply(
-        self, data: dict[str, Any], context: TransformContext,
+        self,
+        data: dict[str, Any],
+        context: TransformContext,
     ) -> TransformResult:
         data["modified_by_post"] = True
         return TransformResult(modified=True)
@@ -690,7 +794,9 @@ class _FailingHook(TransformHook):
         return TransformStage.PRE_REQUEST
 
     async def apply(
-        self, data: dict[str, Any], context: TransformContext,
+        self,
+        data: dict[str, Any],
+        context: TransformContext,
     ) -> TransformResult:
         msg = "Hook exploded"
         raise RuntimeError(msg)
@@ -811,7 +917,9 @@ class TestFullPipelineIntegration:
             ],
             enrichment_sources=[
                 EnrichmentSource(
-                    name="org", source_type="static", content="Company: Acme Corp",
+                    name="org",
+                    source_type="static",
+                    content="Company: Acme Corp",
                     position="append",
                 ),
             ],
@@ -837,7 +945,8 @@ class TestFullPipelineIntegration:
             post_processing_rules=[
                 PostProcessingRule(name="strip", action="strip_thinking"),
                 PostProcessingRule(
-                    name="meta", action="add_metadata",
+                    name="meta",
+                    action="add_metadata",
                     metadata_pairs={"processed": "true"},
                 ),
             ],
@@ -846,9 +955,11 @@ class TestFullPipelineIntegration:
         pipeline.register(ResponsePostProcessor(cfg.post_processing_rules))
 
         data: dict[str, Any] = {
-            "choices": [{
-                "message": {"content": "<thinking>Hmm</thinking>Answer"},
-            }],
+            "choices": [
+                {
+                    "message": {"content": "<thinking>Hmm</thinking>Answer"},
+                }
+            ],
         }
         await pipeline.run_post_response(data, _ctx())
         assert data["choices"][0]["message"]["content"] == "Answer"

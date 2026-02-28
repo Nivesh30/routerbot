@@ -26,9 +26,7 @@ class SpendRepository(BaseRepository[SpendLog]):
     # Queries
     # ------------------------------------------------------------------
 
-    async def list_by_key(
-        self, key_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[SpendLog]:
+    async def list_by_key(self, key_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[SpendLog]:
         """Return spend logs for a specific virtual key."""
         stmt = (
             select(SpendLog)
@@ -40,9 +38,7 @@ class SpendRepository(BaseRepository[SpendLog]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_by_user(
-        self, user_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[SpendLog]:
+    async def list_by_user(self, user_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[SpendLog]:
         """Return spend logs for a specific user."""
         stmt = (
             select(SpendLog)
@@ -54,9 +50,7 @@ class SpendRepository(BaseRepository[SpendLog]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_by_team(
-        self, team_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[SpendLog]:
+    async def list_by_team(self, team_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[SpendLog]:
         """Return spend logs for a specific team."""
         stmt = (
             select(SpendLog)
@@ -93,25 +87,19 @@ class SpendRepository(BaseRepository[SpendLog]):
 
     async def total_cost_by_key(self, key_id: uuid.UUID) -> float:
         """Sum total cost for a key."""
-        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(
-            SpendLog.key_id == key_id
-        )
+        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(SpendLog.key_id == key_id)
         result = await self._session.execute(stmt)
         return float(result.scalar_one())
 
     async def total_cost_by_user(self, user_id: uuid.UUID) -> float:
         """Sum total cost for a user."""
-        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(
-            SpendLog.user_id == user_id
-        )
+        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(SpendLog.user_id == user_id)
         result = await self._session.execute(stmt)
         return float(result.scalar_one())
 
     async def total_cost_by_team(self, team_id: uuid.UUID) -> float:
         """Sum total cost for a team."""
-        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(
-            SpendLog.team_id == team_id
-        )
+        stmt = select(func.coalesce(func.sum(SpendLog.cost), 0.0)).where(SpendLog.team_id == team_id)
         result = await self._session.execute(stmt)
         return float(result.scalar_one())
 

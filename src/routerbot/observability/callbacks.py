@@ -283,8 +283,7 @@ class ConsoleLogCallback(BaseCallback):
     async def on_request_end(self, data: RequestEndData) -> None:
         self._logger.log(
             self._log_level,
-            "Request completed: request_id=%s model=%s provider=%s "
-            "tokens=%d/%d cost=%.6f latency=%.1fms",
+            "Request completed: request_id=%s model=%s provider=%s tokens=%d/%d cost=%.6f latency=%.1fms",
             data.request_id,
             data.model,
             data.provider,

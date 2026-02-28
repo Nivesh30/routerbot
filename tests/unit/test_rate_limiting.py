@@ -109,17 +109,13 @@ class TestRPMLimiting:
     """Tests for requests-per-minute limiting."""
 
     def test_under_limit(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=10)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=10))
         result = limiter.check_rate_limit()
         assert result.allowed is True
         assert result.remaining_requests == 10
 
     def test_at_limit_blocked(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=3)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=3))
         for _ in range(3):
             limiter.record_request()
 
@@ -129,9 +125,7 @@ class TestRPMLimiting:
         assert result.retry_after >= 0
 
     def test_record_then_check(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=5)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=5))
         for _ in range(3):
             limiter.record_request()
         result = limiter.check_rate_limit()
@@ -148,26 +142,20 @@ class TestTPMLimiting:
     """Tests for tokens-per-minute limiting."""
 
     def test_under_token_limit(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(tpm=1000)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(tpm=1000))
         limiter.record_request(tokens=500)
         result = limiter.check_rate_limit()
         assert result.allowed is True
         assert result.remaining_tokens == 500
 
     def test_over_token_limit(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(tpm=1000)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(tpm=1000))
         limiter.record_request(tokens=1000)
         result = limiter.check_rate_limit()
         assert result.allowed is False
 
     def test_combined_rpm_tpm(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=10, tpm=1000)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=10, tpm=1000))
         for _ in range(5):
             limiter.record_request(tokens=150)
         result = limiter.check_rate_limit()
@@ -328,12 +316,8 @@ class TestHierarchicalScoping:
             user_configs={"user-1": RateLimitConfig(rpm=2)},
         )
         for _ in range(2):
-            limiter.record_request(
-                key_id="key-1", user_id="user-1", team_id="team-a"
-            )
-        result = limiter.check_rate_limit(
-            key_id="key-1", user_id="user-1", team_id="team-a"
-        )
+            limiter.record_request(key_id="key-1", user_id="user-1", team_id="team-a")
+        result = limiter.check_rate_limit(key_id="key-1", user_id="user-1", team_id="team-a")
         assert result.allowed is False
         assert result.scope == RateLimitScope.USER
 
@@ -347,9 +331,7 @@ class TestSlidingWindow:
     """Tests for sliding window expiration."""
 
     def test_old_requests_expire(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=3)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=3))
         # Manually inject old timestamps
         entry = limiter._windows[("global", "global")]
         old_time = time.time() - 120  # 2 minutes ago
@@ -361,9 +343,7 @@ class TestSlidingWindow:
         assert result.remaining_requests == 3
 
     def test_token_records_expire(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(tpm=1000)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(tpm=1000))
         entry = limiter._windows[("global", "global")]
         old_time = time.time() - 120
         entry.token_records = [(old_time, 900)]
@@ -382,9 +362,7 @@ class TestResetAndConfig:
     """Tests for reset and runtime configuration updates."""
 
     def test_reset(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=3)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=3))
         for _ in range(3):
             limiter.record_request()
         limiter.reset()
@@ -463,9 +441,7 @@ class TestHeadersIntegration:
     """Tests for rate limit headers with limiter."""
 
     def test_headers_from_check(self) -> None:
-        limiter = InMemoryRateLimiter(
-            global_config=RateLimitConfig(rpm=10, tpm=5000)
-        )
+        limiter = InMemoryRateLimiter(global_config=RateLimitConfig(rpm=10, tpm=5000))
         for _ in range(3):
             limiter.record_request(tokens=100)
         result = limiter.check_rate_limit()

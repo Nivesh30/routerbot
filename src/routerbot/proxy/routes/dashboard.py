@@ -80,9 +80,7 @@ def _read_prometheus_counter_by_label(
                 for sample in metric.samples:
                     if not (sample.name.endswith("_total") or sample.name == name):
                         continue
-                    if label_filter and not all(
-                        sample.labels.get(k) == v for k, v in label_filter.items()
-                    ):
+                    if label_filter and not all(sample.labels.get(k) == v for k, v in label_filter.items()):
                         continue
                     label_val = sample.labels.get(label_name, "unknown")
                     result[label_val] = result.get(label_val, 0.0) + sample.value
@@ -243,7 +241,10 @@ async def dashboard_stats(
 
     # Get spend logs for the period
     logs = await spend_repo.list_by_date_range(
-        start=start, end=now, offset=0, limit=10000,
+        start=start,
+        end=now,
+        offset=0,
+        limit=10000,
     )
 
     # Get counts
@@ -287,10 +288,14 @@ async def dashboard_stats(
 
     # Error rate from Prometheus
     total_success = _read_prometheus_counter_by_label(
-        "routerbot_request", "status", label_filter={"status": "success"},
+        "routerbot_request",
+        "status",
+        label_filter={"status": "success"},
     )
     total_errors = _read_prometheus_counter_by_label(
-        "routerbot_request", "status", label_filter={"status": "error"},
+        "routerbot_request",
+        "status",
+        label_filter={"status": "error"},
     )
     success_count = sum(total_success.values())
     error_count = sum(total_errors.values())
@@ -309,14 +314,17 @@ async def dashboard_stats(
     # Recent errors (from Prometheus labels — we'll show model/provider combos)
     recent_errors: list[dict[str, str]] = []
     error_by_model = _read_prometheus_counter_by_label(
-        "routerbot_errors", "model",
+        "routerbot_errors",
+        "model",
     )
     for model, count in sorted(error_by_model.items(), key=lambda x: -x[1])[:10]:
-        recent_errors.append({
-            "model": model,
-            "error_count": str(int(count)),
-            "timestamp": now.isoformat(),
-        })
+        recent_errors.append(
+            {
+                "model": model,
+                "error_count": str(int(count)),
+                "timestamp": now.isoformat(),
+            }
+        )
 
     # Uptime
     health_start = getattr(
@@ -326,38 +334,34 @@ async def dashboard_stats(
     )
     uptime = round(time.time() - health_start, 1)
 
-    return JSONResponse(content={
-        "period": period,
-        "period_start": start.isoformat(),
-        "period_end": now.isoformat(),
-
-        # KPIs
-        "total_requests": total_requests,
-        "total_spend": round(total_spend, 6),
-        "total_tokens": total_tokens,
-        "active_keys": len(active_keys),
-        "active_models": model_count,
-        "active_teams": len(all_teams),
-        "active_users": len(all_users),
-        "error_rate": round(error_rate, 6),
-
-        # Latency
-        "latency_p50": latency.get("p50", 0),
-        "latency_p95": latency.get("p95", 0),
-        "latency_p99": latency.get("p99", 0),
-
-        # Breakdowns
-        "spend_by_model": {k: round(v, 6) for k, v in spend_by_model.items()},
-        "requests_by_model": requests_by_model,
-        "top_models": top_models,
-
-        # Time series
-        "time_series": time_series,
-
-        # Health
-        "provider_health": provider_health,
-        "uptime_seconds": uptime,
-
-        # Errors
-        "recent_errors": recent_errors,
-    })
+    return JSONResponse(
+        content={
+            "period": period,
+            "period_start": start.isoformat(),
+            "period_end": now.isoformat(),
+            # KPIs
+            "total_requests": total_requests,
+            "total_spend": round(total_spend, 6),
+            "total_tokens": total_tokens,
+            "active_keys": len(active_keys),
+            "active_models": model_count,
+            "active_teams": len(all_teams),
+            "active_users": len(all_users),
+            "error_rate": round(error_rate, 6),
+            # Latency
+            "latency_p50": latency.get("p50", 0),
+            "latency_p95": latency.get("p95", 0),
+            "latency_p99": latency.get("p99", 0),
+            # Breakdowns
+            "spend_by_model": {k: round(v, 6) for k, v in spend_by_model.items()},
+            "requests_by_model": requests_by_model,
+            "top_models": top_models,
+            # Time series
+            "time_series": time_series,
+            # Health
+            "provider_health": provider_health,
+            "uptime_seconds": uptime,
+            # Errors
+            "recent_errors": recent_errors,
+        }
+    )

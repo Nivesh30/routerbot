@@ -45,9 +45,7 @@ class ModelHub:
     def register_model(self, info: ModelInfo) -> None:
         """Register or update a model in the catalogue."""
         # Replace if already exists
-        self._catalogue.models = [
-            m for m in self._catalogue.models if m.model_id != info.model_id
-        ]
+        self._catalogue.models = [m for m in self._catalogue.models if m.model_id != info.model_id]
         self._catalogue.models.append(info)
         self._catalogue.updated_at = datetime.now(tz=UTC)
         logger.info("Model %s registered", info.model_id)
@@ -55,9 +53,7 @@ class ModelHub:
     def unregister_model(self, model_id: str) -> bool:
         """Remove a model from the catalogue.  Returns True if removed."""
         before = len(self._catalogue.models)
-        self._catalogue.models = [
-            m for m in self._catalogue.models if m.model_id != model_id
-        ]
+        self._catalogue.models = [m for m in self._catalogue.models if m.model_id != model_id]
         return len(self._catalogue.models) < before
 
     def get_model(self, model_id: str) -> ModelInfo | None:
@@ -105,9 +101,7 @@ class ModelHub:
         async def _run_model(model_id: str) -> ComparisonResult:
             start = time.monotonic()
             try:
-                response_text, in_tok, out_tok = await self._handler(
-                    model_id, request.messages, request.parameters
-                )
+                response_text, in_tok, out_tok = await self._handler(model_id, request.messages, request.parameters)
                 latency = (time.monotonic() - start) * 1000
 
                 # Estimate cost from catalogue

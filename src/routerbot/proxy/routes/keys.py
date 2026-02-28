@@ -108,10 +108,7 @@ def _require_master_key(request: Request) -> None:
         # No master key configured — allow unrestricted management
         return
 
-    provided = (
-        request.headers.get("x-master-key")
-        or request.headers.get("authorization", "").removeprefix("Bearer ")
-    )
+    provided = request.headers.get("x-master-key") or request.headers.get("authorization", "").removeprefix("Bearer ")
     if not provided or provided != master_key:
         raise HTTPException(status_code=401, detail="Invalid or missing master key")
 

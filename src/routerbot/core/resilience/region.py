@@ -120,11 +120,7 @@ class RegionRouter:
 
         # Apply max distance filter
         if self.config.max_failover_distance_km > 0 and ranked:
-            ranked = [
-                pr
-                for pr in ranked
-                if self._distance(region, pr.region) <= self.config.max_failover_distance_km
-            ]
+            ranked = [pr for pr in ranked if self._distance(region, pr.region) <= self.config.max_failover_distance_km]
 
         return ranked[0] if ranked else None
 

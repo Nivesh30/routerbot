@@ -12,14 +12,13 @@ Covers:
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from routerbot.core.config_models import ModelEntry, ModelParams, RouterBotConfig, RouterSettings
+from routerbot.core.config_models import ModelEntry, ModelParams, RouterBotConfig
 from routerbot.core.enums import Role
 from routerbot.core.exceptions import (
     AuthenticationError,
@@ -43,7 +42,6 @@ from routerbot.router.strategies import (
     WeightedStrategy,
     get_strategy,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Helpers

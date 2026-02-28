@@ -111,9 +111,7 @@ class TestProviderBudgets:
         assert result.allowed is True
 
     def test_under_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=50.0)
         result = mgr.check_provider_budget("openai")
         assert result.allowed is True
@@ -121,18 +119,14 @@ class TestProviderBudgets:
         assert result.current_spend == 50.0
 
     def test_over_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=100.0)
         result = mgr.check_provider_budget("openai")
         assert result.allowed is False
         assert result.remaining == 0.0
 
     def test_exceeded_by(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=120.0)
         result = mgr.check_provider_budget("openai")
         assert result.allowed is False
@@ -152,17 +146,13 @@ class TestProviderBudgets:
         assert mgr.check_provider_budget("anthropic").allowed is True
 
     def test_zero_cost_ignored(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=0)
         mgr.record_spend(provider="openai", cost=-5)
         assert mgr.get_provider_spend("openai") == 0.0
 
     def test_incremental_spend(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=30.0)
         mgr.record_spend(provider="openai", cost=30.0)
         mgr.record_spend(provider="openai", cost=30.0)
@@ -184,23 +174,15 @@ class TestTagBudgets:
         assert result.allowed is True
 
     def test_tag_under_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            tag_budgets={"production": BudgetConfig(max_budget=500.0)}
-        )
-        mgr.record_spend(
-            provider="openai", cost=100.0, tags=["production"]
-        )
+        mgr = ProviderBudgetManager(tag_budgets={"production": BudgetConfig(max_budget=500.0)})
+        mgr.record_spend(provider="openai", cost=100.0, tags=["production"])
         result = mgr.check_tag_budget("production")
         assert result.allowed is True
         assert result.remaining == 400.0
 
     def test_tag_over_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            tag_budgets={"production": BudgetConfig(max_budget=500.0)}
-        )
-        mgr.record_spend(
-            provider="openai", cost=500.0, tags=["production"]
-        )
+        mgr = ProviderBudgetManager(tag_budgets={"production": BudgetConfig(max_budget=500.0)})
+        mgr.record_spend(provider="openai", cost=500.0, tags=["production"])
         result = mgr.check_tag_budget("production")
         assert result.allowed is False
 
@@ -211,9 +193,7 @@ class TestTagBudgets:
                 "staging": BudgetConfig(max_budget=100.0),
             }
         )
-        mgr.record_spend(
-            provider="openai", cost=50.0, tags=["production", "staging"]
-        )
+        mgr.record_spend(provider="openai", cost=50.0, tags=["production", "staging"])
         assert mgr.get_tag_spend("production") == 50.0
         assert mgr.get_tag_spend("staging") == 50.0
 
@@ -257,13 +237,9 @@ class TestAvailableProviders:
         assert available == ["anthropic"]
 
     def test_unconfigured_always_included(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=100.0)
-        available = mgr.get_available_providers(
-            ["openai", "anthropic", "gemini"]
-        )
+        available = mgr.get_available_providers(["openai", "anthropic", "gemini"])
         assert "anthropic" in available
         assert "gemini" in available
         assert "openai" not in available
@@ -283,11 +259,7 @@ class TestPeriodReset:
 
     def test_daily_reset(self) -> None:
         mgr = ProviderBudgetManager(
-            provider_budgets={
-                "openai": BudgetConfig(
-                    max_budget=100.0, budget_period=BudgetPeriod.DAILY
-                )
-            }
+            provider_budgets={"openai": BudgetConfig(max_budget=100.0, budget_period=BudgetPeriod.DAILY)}
         )
         mgr.record_spend(provider="openai", cost=100.0)
         assert mgr.check_provider_budget("openai").allowed is False
@@ -319,11 +291,7 @@ class TestPeriodReset:
 
     def test_tag_period_reset(self) -> None:
         mgr = ProviderBudgetManager(
-            tag_budgets={
-                "prod": BudgetConfig(
-                    max_budget=500.0, budget_period=BudgetPeriod.DAILY
-                )
-            }
+            tag_budgets={"prod": BudgetConfig(max_budget=500.0, budget_period=BudgetPeriod.DAILY)}
         )
         mgr.record_spend(provider="openai", cost=500.0, tags=["prod"])
         assert mgr.check_tag_budget("prod").allowed is False
@@ -350,9 +318,7 @@ class TestRuntimeConfig:
         assert mgr.check_provider_budget("openai").allowed is False
 
     def test_remove_provider_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.remove_provider_budget("openai")
         assert mgr.check_provider_budget("openai").allowed is True
 
@@ -363,9 +329,7 @@ class TestRuntimeConfig:
         assert mgr.check_tag_budget("prod").allowed is False
 
     def test_remove_tag_budget(self) -> None:
-        mgr = ProviderBudgetManager(
-            tag_budgets={"prod": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(tag_budgets={"prod": BudgetConfig(max_budget=100.0)})
         mgr.remove_tag_budget("prod")
         assert mgr.check_tag_budget("prod").allowed is True
 
@@ -379,9 +343,7 @@ class TestManualReset:
     """Tests for manual budget resets."""
 
     def test_reset_provider(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=100.0)
         assert mgr.check_provider_budget("openai").allowed is False
 
@@ -389,9 +351,7 @@ class TestManualReset:
         assert mgr.check_provider_budget("openai").allowed is True
 
     def test_reset_tag(self) -> None:
-        mgr = ProviderBudgetManager(
-            tag_budgets={"prod": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(tag_budgets={"prod": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=100.0, tags=["prod"])
         mgr.reset_tag("prod")
         assert mgr.check_tag_budget("prod").allowed is True
@@ -427,9 +387,7 @@ class TestStatusQueries:
     """Tests for status/spend queries."""
 
     def test_get_provider_spend(self) -> None:
-        mgr = ProviderBudgetManager(
-            provider_budgets={"openai": BudgetConfig(max_budget=100.0)}
-        )
+        mgr = ProviderBudgetManager(provider_budgets={"openai": BudgetConfig(max_budget=100.0)})
         mgr.record_spend(provider="openai", cost=42.5)
         assert mgr.get_provider_spend("openai") == 42.5
 
@@ -438,9 +396,7 @@ class TestStatusQueries:
         assert mgr.get_provider_spend("openai") == 0.0
 
     def test_get_tag_spend(self) -> None:
-        mgr = ProviderBudgetManager(
-            tag_budgets={"prod": BudgetConfig(max_budget=500.0)}
-        )
+        mgr = ProviderBudgetManager(tag_budgets={"prod": BudgetConfig(max_budget=500.0)})
         mgr.record_spend(provider="openai", cost=75.0, tags=["prod"])
         assert mgr.get_tag_spend("prod") == 75.0
 

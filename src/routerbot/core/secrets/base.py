@@ -174,10 +174,7 @@ class SecretResolver:
 
         backend = self._backends.get(prefix)
         if backend is None:
-            msg = (
-                f"No secret backend registered for prefix '{prefix}'. "
-                f"Available: {list(self._backends.keys())}"
-            )
+            msg = f"No secret backend registered for prefix '{prefix}'. Available: {list(self._backends.keys())}"
             raise SecretResolutionError(msg)
 
         cache_key = f"{prefix}/{path}"

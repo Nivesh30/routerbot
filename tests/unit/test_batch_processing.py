@@ -188,16 +188,12 @@ class TestJobQueue:
         assert job.request is sample_request
         assert job.created_at is not None
 
-    async def test_submit_returns_unique_ids(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_submit_returns_unique_ids(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         j1 = await queue.submit(sample_request)
         j2 = await queue.submit(sample_request)
         assert j1.job_id != j2.job_id
 
-    async def test_submit_queue_full(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_submit_queue_full(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         for _ in range(5):
             await queue.submit(sample_request)
         with pytest.raises(QueueFullError, match="Queue full"):
@@ -207,9 +203,7 @@ class TestJobQueue:
         result = await queue.take()
         assert result is None
 
-    async def test_take_returns_pending_job(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_take_returns_pending_job(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         await queue.submit(sample_request)
         job = await queue.take()
         assert job is not None
@@ -237,9 +231,7 @@ class TestJobQueue:
         assert j2.request.priority == Priority.MEDIUM
         assert j3.request.priority == Priority.LOW
 
-    async def test_complete_job(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_complete_job(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         taken = await queue.take()
         assert taken is not None
@@ -250,9 +242,7 @@ class TestJobQueue:
         assert job.result == {"text": "done"}
         assert job.completed_at is not None
 
-    async def test_fail_job_with_retry(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_fail_job_with_retry(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         taken = await queue.take()
         assert taken is not None
@@ -263,9 +253,7 @@ class TestJobQueue:
         assert job.status == JobStatus.PENDING
         assert job.error == "oops"
 
-    async def test_fail_job_exhausted_retries(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_fail_job_exhausted_retries(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         # First attempt
         taken = await queue.take()
@@ -280,9 +268,7 @@ class TestJobQueue:
         assert job.status == JobStatus.FAILED
         assert job.completed_at is not None
 
-    async def test_cancel_job(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_cancel_job(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         assert queue.cancel(submitted.job_id) is True
         job = queue.get_job(submitted.job_id)
@@ -292,27 +278,21 @@ class TestJobQueue:
     async def test_cancel_nonexistent(self, queue: JobQueue) -> None:
         assert queue.cancel("nonexistent") is False
 
-    async def test_cancel_completed_job(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_cancel_completed_job(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         taken = await queue.take()
         assert taken is not None
         queue.complete(taken.job_id, {})
         assert queue.cancel(submitted.job_id) is False
 
-    async def test_get_result(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_get_result(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         result = queue.get_result(submitted.job_id)
         assert result is not None
         assert result.status == JobStatus.PENDING
         assert result.progress == 0.0
 
-    async def test_get_result_completed(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_get_result_completed(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         taken = await queue.take()
         assert taken is not None
@@ -323,9 +303,7 @@ class TestJobQueue:
         assert result.progress == 1.0
         assert result.result == {"answer": "42"}
 
-    async def test_get_result_in_progress(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_get_result_in_progress(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         submitted = await queue.submit(sample_request)
         await queue.take()
         result = queue.get_result(submitted.job_id)
@@ -344,25 +322,19 @@ class TestJobQueue:
         expired = queue.expire_stale_jobs()
         assert expired == 1
 
-    async def test_expire_no_stale(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_expire_no_stale(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         await queue.submit(sample_request)
         expired = queue.expire_stale_jobs()
         assert expired == 0
 
-    async def test_stats(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_stats(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         await queue.submit(sample_request)
         await queue.submit(sample_request)
         s = queue.stats()
         assert s["total"] == 2
         assert s["pending"] == 2
 
-    async def test_clear(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_clear(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         await queue.submit(sample_request)
         await queue.submit(sample_request)
         removed = queue.clear()
@@ -401,9 +373,7 @@ class TestBatchManager:
             for i in range(3)
         ]
 
-    async def test_create_batch(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_create_batch(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         assert batch.batch_id.startswith("batch_")
         assert batch.status == BatchStatus.IN_PROGRESS
@@ -415,10 +385,7 @@ class TestBatchManager:
             await manager.create_batch([])
 
     async def test_create_batch_too_large(self, manager: BatchManager) -> None:
-        requests = [
-            BatchRequest(custom_id=f"req-{i}", method="POST", url="/v1/x", body={})
-            for i in range(11)
-        ]
+        requests = [BatchRequest(custom_id=f"req-{i}", method="POST", url="/v1/x", body={}) for i in range(11)]
         with pytest.raises(BatchValidationError, match="too large"):
             await manager.create_batch(requests)
 
@@ -430,15 +397,11 @@ class TestBatchManager:
         with pytest.raises(BatchValidationError, match="Duplicate"):
             await manager.create_batch(requests)
 
-    async def test_create_batch_with_metadata(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_create_batch_with_metadata(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests, metadata={"team": "ml"})
         assert batch.metadata == {"team": "ml"}
 
-    async def test_execute_batch(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_execute_batch(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         result = await manager.execute_batch(batch.batch_id)
         assert result.status == BatchStatus.COMPLETED
@@ -456,9 +419,7 @@ class TestBatchManager:
     ) -> None:
         call_count = 0
 
-        async def failing_handler(
-            method: str, url: str, body: dict[str, Any]
-        ) -> tuple[int, dict[str, Any]]:
+        async def failing_handler(method: str, url: str, body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
             nonlocal call_count
             call_count += 1
             if call_count == 2:
@@ -474,9 +435,7 @@ class TestBatchManager:
         assert len(result.errors) == 1
 
     async def test_execute_batch_all_fail(self, manager: BatchManager) -> None:
-        async def always_fail(
-            method: str, url: str, body: dict[str, Any]
-        ) -> tuple[int, dict[str, Any]]:
+        async def always_fail(method: str, url: str, body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
             raise RuntimeError("boom")
 
         manager._handler = always_fail
@@ -487,18 +446,14 @@ class TestBatchManager:
         result = await manager.execute_batch(batch.batch_id)
         assert result.status == BatchStatus.FAILED
 
-    async def test_execute_already_completed(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_execute_already_completed(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         await manager.execute_batch(batch.batch_id)
         # Execute again — should be a no-op
         result = await manager.execute_batch(batch.batch_id)
         assert result.status == BatchStatus.COMPLETED
 
-    async def test_get_batch(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_get_batch(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         fetched = manager.get_batch(batch.batch_id)
         assert fetched is not None
@@ -507,18 +462,14 @@ class TestBatchManager:
     async def test_get_batch_nonexistent(self, manager: BatchManager) -> None:
         assert manager.get_batch("nope") is None
 
-    async def test_cancel_batch(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_cancel_batch(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         assert manager.cancel_batch(batch.batch_id) is True
         fetched = manager.get_batch(batch.batch_id)
         assert fetched is not None
         assert fetched.status == BatchStatus.CANCELLED
 
-    async def test_cancel_completed_batch(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_cancel_completed_batch(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         batch = await manager.create_batch(sample_requests)
         await manager.execute_batch(batch.batch_id)
         assert manager.cancel_batch(batch.batch_id) is False
@@ -526,17 +477,13 @@ class TestBatchManager:
     async def test_cancel_nonexistent(self, manager: BatchManager) -> None:
         assert manager.cancel_batch("nope") is False
 
-    async def test_list_batches(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_list_batches(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         await manager.create_batch(sample_requests)
         await manager.create_batch(sample_requests[:1])
         batches = manager.list_batches()
         assert len(batches) == 2
 
-    async def test_list_batches_filter_status(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_list_batches_filter_status(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         b1 = await manager.create_batch(sample_requests)
         await manager.create_batch(sample_requests[:1])
         await manager.execute_batch(b1.batch_id)
@@ -545,17 +492,13 @@ class TestBatchManager:
         in_progress = manager.list_batches(status=BatchStatus.IN_PROGRESS)
         assert len(in_progress) == 1
 
-    async def test_list_batches_limit(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_list_batches_limit(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         for _ in range(5):
             await manager.create_batch(sample_requests)
         batches = manager.list_batches(limit=2)
         assert len(batches) == 2
 
-    async def test_stats(
-        self, manager: BatchManager, sample_requests: list[BatchRequest]
-    ) -> None:
+    async def test_stats(self, manager: BatchManager, sample_requests: list[BatchRequest]) -> None:
         b1 = await manager.create_batch(sample_requests)
         await manager.execute_batch(b1.batch_id)
         s = manager.stats()
@@ -597,9 +540,7 @@ class TestWorkerPool:
         assert pool.worker_count == 1
         await pool.stop()
 
-    async def test_process_one(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_process_one(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         handler = AsyncMock(return_value={"text": "response"})
         pool = WorkerPool(queue, handler=handler, config=QueueConfig(worker_count=1))
         await queue.submit(sample_request)
@@ -609,9 +550,7 @@ class TestWorkerPool:
         assert result == {"text": "response"}
         handler.assert_awaited_once_with(taken)
 
-    async def test_worker_processes_job(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_worker_processes_job(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         handler = AsyncMock(return_value={"text": "done"})
         pool = WorkerPool(queue, handler=handler, config=QueueConfig(worker_count=1))
         pool._poll_interval = 0.05
@@ -625,9 +564,7 @@ class TestWorkerPool:
         # Job should have been completed
         handler.assert_awaited_once()
 
-    async def test_worker_retries_on_failure(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_worker_retries_on_failure(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         call_count = 0
 
         async def flaky_handler(job: AsyncJob) -> dict[str, Any]:
@@ -654,9 +591,7 @@ class TestWorkerPool:
         assert job.status == JobStatus.COMPLETED
         assert call_count == 2
 
-    async def test_worker_callback(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_worker_callback(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         req_with_cb = AsyncJobRequest(
             model="gpt-4",
             messages=[],
@@ -677,9 +612,7 @@ class TestWorkerPool:
             await asyncio.sleep(0.3)
             await pool.stop()
 
-    async def test_default_handler(
-        self, queue: JobQueue, sample_request: AsyncJobRequest
-    ) -> None:
+    async def test_default_handler(self, queue: JobQueue, sample_request: AsyncJobRequest) -> None:
         pool = WorkerPool(queue, config=QueueConfig(worker_count=1))
         await queue.submit(sample_request)
         taken = await queue.take()
@@ -719,10 +652,7 @@ class TestIntegration:
 
     async def test_batch_end_to_end(self) -> None:
         """Create batch → execute → check results."""
-        requests = [
-            BatchRequest(custom_id=f"r{i}", method="POST", url="/v1/chat", body={"i": i})
-            for i in range(5)
-        ]
+        requests = [BatchRequest(custom_id=f"r{i}", method="POST", url="/v1/chat", body={"i": i}) for i in range(5)]
         manager = BatchManager()
         batch = await manager.create_batch(requests)
         result = await manager.execute_batch(batch.batch_id)
@@ -781,10 +711,7 @@ class TestIntegration:
         """Stats should aggregate across multiple batches."""
         manager = BatchManager()
         for i in range(3):
-            requests = [
-                BatchRequest(custom_id=f"b{i}-r{j}", method="POST", url="/v1/x", body={})
-                for j in range(2)
-            ]
+            requests = [BatchRequest(custom_id=f"b{i}-r{j}", method="POST", url="/v1/x", body={}) for j in range(2)]
             batch = await manager.create_batch(requests)
             await manager.execute_batch(batch.batch_id)
 

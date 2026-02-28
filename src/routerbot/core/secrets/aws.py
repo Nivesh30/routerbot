@@ -45,10 +45,7 @@ class AWSSecretsManagerBackend(SecretBackend):
         endpoint_url: str | None = None,
     ) -> None:
         if not _HAS_BOTO3:
-            msg = (
-                "boto3 is required for AWS Secrets Manager integration. "
-                "Install it with: pip install boto3"
-            )
+            msg = "boto3 is required for AWS Secrets Manager integration. Install it with: pip install boto3"
             raise ImportError(msg)
 
         session_kwargs: dict[str, str] = {}

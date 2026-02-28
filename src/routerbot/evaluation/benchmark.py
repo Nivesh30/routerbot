@@ -154,9 +154,7 @@ class Benchmark:
 
         # Get model response
         if self._handler is not None:
-            messages = sample.input_messages or [
-                {"role": "user", "content": sample.expected_output}
-            ]
+            messages = sample.input_messages or [{"role": "user", "content": sample.expected_output}]
             try:
                 result.actual_output = await self._handler(model_id, messages)
             except Exception as exc:
@@ -246,11 +244,13 @@ class Benchmark:
             sample_count = model_summary.get("sample_count", 1) or 1
             cost = model_summary.get("total_cost", 0.0) / sample_count
 
-            points.append(ParetoPoint(
-                model_id=model_id,
-                quality_score=quality,
-                cost_per_sample=cost,
-            ))
+            points.append(
+                ParetoPoint(
+                    model_id=model_id,
+                    quality_score=quality,
+                    cost_per_sample=cost,
+                )
+            )
 
         # Mark Pareto-optimal points (no other point dominates)
         for p in points:
@@ -294,7 +294,5 @@ class Benchmark:
         return {
             "suites": len(self._suites),
             "runs": len(self._runs),
-            "completed_runs": sum(
-                1 for r in self._runs.values() if r.status == EvalStatus.COMPLETED
-            ),
+            "completed_runs": sum(1 for r in self._runs.values() if r.status == EvalStatus.COMPLETED),
         }

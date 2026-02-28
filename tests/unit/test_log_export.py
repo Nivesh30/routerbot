@@ -99,7 +99,6 @@ def record2() -> LogRecord:
 
 
 class TestLogRecord:
-
     def test_to_dict(self, record: LogRecord) -> None:
         d = record.to_dict()
         assert d["request_id"] == "req-001"
@@ -144,7 +143,6 @@ class TestLogRecord:
 
 
 class TestHelpers:
-
     def test_date_partition(self) -> None:
         result = date_partition(1700000000.0)
         assert result == "2023/11/14"
@@ -164,7 +162,6 @@ class TestHelpers:
 
 
 class TestBaseExporter:
-
     @pytest.mark.asyncio()
     async def test_realtime_mode(self, record: LogRecord) -> None:
         config = ExportConfig(mode=ExportMode.REALTIME)
@@ -282,7 +279,6 @@ class TestBaseExporter:
 
 
 class TestLocalExporter:
-
     @pytest.mark.asyncio()
     async def test_write_creates_file(self, record: LogRecord) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -318,7 +314,6 @@ class TestLocalExporter:
 
 
 class TestLogExportCallback:
-
     @pytest.mark.asyncio()
     async def test_on_request_end(self) -> None:
         config = ExportConfig(mode=ExportMode.REALTIME)
@@ -381,7 +376,6 @@ class TestLogExportCallback:
 
 
 class TestExportConfig:
-
     def test_defaults(self) -> None:
         config = ExportConfig()
         assert config.enabled is True

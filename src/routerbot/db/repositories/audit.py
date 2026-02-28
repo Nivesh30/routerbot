@@ -26,9 +26,7 @@ class AuditRepository(BaseRepository[AuditLog]):
     # Queries
     # ------------------------------------------------------------------
 
-    async def list_by_actor(
-        self, actor_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[AuditLog]:
+    async def list_by_actor(self, actor_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[AuditLog]:
         """Return audit logs created by a specific actor."""
         stmt = (
             select(AuditLog)
@@ -40,9 +38,7 @@ class AuditRepository(BaseRepository[AuditLog]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_by_action(
-        self, action: str, *, offset: int = 0, limit: int = 100
-    ) -> list[AuditLog]:
+    async def list_by_action(self, action: str, *, offset: int = 0, limit: int = 100) -> list[AuditLog]:
         """Return audit logs of a specific action type."""
         stmt = (
             select(AuditLog)

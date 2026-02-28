@@ -415,9 +415,7 @@ class TestJWKS:
         authn._jwks_keys = {}  # Empty cache
 
         mock_resp = Mock()
-        mock_resp.json.return_value = {
-            "keys": [{"kid": "new-key", "kty": "RSA", "n": "n", "e": "AQAB"}]
-        }
+        mock_resp.json.return_value = {"keys": [{"kid": "new-key", "kty": "RSA", "n": "n", "e": "AQAB"}]}
         mock_resp.raise_for_status = Mock()
 
         with patch("routerbot.auth.jwt.httpx.AsyncClient") as mock_client_cls:

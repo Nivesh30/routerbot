@@ -36,12 +36,14 @@ class TestDatadogPlugin:
         assert hook._tags == []
 
     def test_custom_config(self) -> None:
-        hook = DatadogCallbackHook(config={
-            "host": "dd.example.com",
-            "port": 9999,
-            "prefix": "myapp",
-            "tags": ["env:test", "team:ml"],
-        })
+        hook = DatadogCallbackHook(
+            config={
+                "host": "dd.example.com",
+                "port": 9999,
+                "prefix": "myapp",
+                "tags": ["env:test", "team:ml"],
+            }
+        )
         assert hook._host == "dd.example.com"
         assert hook._port == 9999
         assert hook._prefix == "myapp"
@@ -77,13 +79,15 @@ class TestDatadogPlugin:
         hook = DatadogCallbackHook(config={"tags": ["env:test"]})
         hook._sock = MagicMock(spec=socket.socket)
 
-        await hook.on_request_end({
-            "model": "gpt-4",
-            "status": "success",
-            "latency_ms": 250,
-            "total_tokens": 500,
-            "cost": 0.05,
-        })
+        await hook.on_request_end(
+            {
+                "model": "gpt-4",
+                "status": "success",
+                "latency_ms": 250,
+                "total_tokens": 500,
+                "cost": 0.05,
+            }
+        )
 
         # Should send latency, tokens, cost, and end counter = 4 calls
         assert hook._sock.sendto.call_count == 4
@@ -138,13 +142,15 @@ class TestSplunkPlugin:
         assert hook._index == "main"
 
     def test_custom_config(self) -> None:
-        hook = SplunkCallbackHook(config={
-            "hec_url": "https://splunk:8088/services/collector/event",
-            "hec_token": "abc123",
-            "source": "myapp",
-            "sourcetype": "custom",
-            "index": "llm",
-        })
+        hook = SplunkCallbackHook(
+            config={
+                "hec_url": "https://splunk:8088/services/collector/event",
+                "hec_token": "abc123",
+                "source": "myapp",
+                "sourcetype": "custom",
+                "index": "llm",
+            }
+        )
         assert hook._hec_url == "https://splunk:8088/services/collector/event"
         assert hook._hec_token == "abc123"
         assert hook._source == "myapp"
@@ -162,10 +168,12 @@ class TestSplunkPlugin:
         assert hook._client is None
 
     async def test_on_request_start(self) -> None:
-        hook = SplunkCallbackHook(config={
-            "hec_url": "https://splunk:8088/services/collector/event",
-            "hec_token": "tok",
-        })
+        hook = SplunkCallbackHook(
+            config={
+                "hec_url": "https://splunk:8088/services/collector/event",
+                "hec_token": "tok",
+            }
+        )
         await hook.setup()
 
         mock_resp = MagicMock()
@@ -183,9 +191,11 @@ class TestSplunkPlugin:
         assert payload["event"]["event_type"] == "request_start"
 
     async def test_on_request_end(self) -> None:
-        hook = SplunkCallbackHook(config={
-            "hec_url": "https://splunk:8088/services/collector/event",
-        })
+        hook = SplunkCallbackHook(
+            config={
+                "hec_url": "https://splunk:8088/services/collector/event",
+            }
+        )
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -195,9 +205,11 @@ class TestSplunkPlugin:
         hook._client.post.assert_called_once()
 
     async def test_on_error(self) -> None:
-        hook = SplunkCallbackHook(config={
-            "hec_url": "https://splunk:8088/services/collector/event",
-        })
+        hook = SplunkCallbackHook(
+            config={
+                "hec_url": "https://splunk:8088/services/collector/event",
+            }
+        )
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -239,11 +251,13 @@ class TestSlackPlugin:
         assert hook._error_threshold == 5
 
     def test_custom_config(self) -> None:
-        hook = SlackCallbackHook(config={
-            "webhook_url": "https://hooks.slack.com/xxx",
-            "channel": "#test",
-            "error_threshold": 3,
-        })
+        hook = SlackCallbackHook(
+            config={
+                "webhook_url": "https://hooks.slack.com/xxx",
+                "channel": "#test",
+                "error_threshold": 3,
+            }
+        )
         assert hook._webhook_url == "https://hooks.slack.com/xxx"
         assert hook._channel == "#test"
         assert hook._error_threshold == 3
@@ -255,10 +269,12 @@ class TestSlackPlugin:
         await hook.teardown()
 
     async def test_error_threshold_triggers_alert(self) -> None:
-        hook = SlackCallbackHook(config={
-            "webhook_url": "https://hooks.slack.com/xxx",
-            "error_threshold": 3,
-        })
+        hook = SlackCallbackHook(
+            config={
+                "webhook_url": "https://hooks.slack.com/xxx",
+                "error_threshold": 3,
+            }
+        )
         await hook.setup()
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
@@ -275,40 +291,48 @@ class TestSlackPlugin:
         hook._client.post.assert_called_once()
 
     async def test_success_resets_error_counter(self) -> None:
-        hook = SlackCallbackHook(config={
-            "webhook_url": "https://hooks.slack.com/xxx",
-            "error_threshold": 3,
-        })
+        hook = SlackCallbackHook(
+            config={
+                "webhook_url": "https://hooks.slack.com/xxx",
+                "error_threshold": 3,
+            }
+        )
         hook._consecutive_errors = 2
         await hook.on_request_end({"status": "success"})
         assert hook._consecutive_errors == 0
 
     async def test_budget_alert(self) -> None:
-        hook = SlackCallbackHook(config={
-            "webhook_url": "https://hooks.slack.com/xxx",
-        })
+        hook = SlackCallbackHook(
+            config={
+                "webhook_url": "https://hooks.slack.com/xxx",
+            }
+        )
         await hook.setup()
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         hook._client.post = AsyncMock(return_value=mock_resp)
 
-        await hook.on_request_end({
-            "status": "success",
-            "budget_alert": {
-                "model": "gpt-4",
-                "current_spend": 150.0,
-                "threshold": 100.0,
-                "severity": "warning",
-            },
-        })
+        await hook.on_request_end(
+            {
+                "status": "success",
+                "budget_alert": {
+                    "model": "gpt-4",
+                    "current_spend": 150.0,
+                    "threshold": 100.0,
+                    "severity": "warning",
+                },
+            }
+        )
         hook._client.post.assert_called_once()
 
     async def test_no_alert_when_disabled(self) -> None:
-        hook = SlackCallbackHook(config={
-            "webhook_url": "https://hooks.slack.com/xxx",
-            "notify_on_error": False,
-        })
+        hook = SlackCallbackHook(
+            config={
+                "webhook_url": "https://hooks.slack.com/xxx",
+                "notify_on_error": False,
+            }
+        )
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         hook._client.post = AsyncMock()
 
@@ -348,12 +372,14 @@ class TestPagerDutyPlugin:
         assert hook._source == "routerbot"
 
     def test_custom_config(self) -> None:
-        hook = PagerDutyCallbackHook(config={
-            "routing_key": "key123",
-            "severity": "critical",
-            "error_threshold": 5,
-            "source": "myapp",
-        })
+        hook = PagerDutyCallbackHook(
+            config={
+                "routing_key": "key123",
+                "severity": "critical",
+                "error_threshold": 5,
+                "source": "myapp",
+            }
+        )
         assert hook._routing_key == "key123"
         assert hook._severity == "critical"
         assert hook._error_threshold == 5
@@ -365,10 +391,12 @@ class TestPagerDutyPlugin:
         await hook.teardown()
 
     async def test_error_threshold_triggers_incident(self) -> None:
-        hook = PagerDutyCallbackHook(config={
-            "routing_key": "key123",
-            "error_threshold": 3,
-        })
+        hook = PagerDutyCallbackHook(
+            config={
+                "routing_key": "key123",
+                "error_threshold": 3,
+            }
+        )
         await hook.setup()
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
@@ -390,10 +418,12 @@ class TestPagerDutyPlugin:
         assert payload["event_action"] == "trigger"
 
     async def test_success_resolves_incident(self) -> None:
-        hook = PagerDutyCallbackHook(config={
-            "routing_key": "key123",
-            "error_threshold": 2,
-        })
+        hook = PagerDutyCallbackHook(
+            config={
+                "routing_key": "key123",
+                "error_threshold": 2,
+            }
+        )
         await hook.setup()
         hook._client = AsyncMock(spec=httpx.AsyncClient)
         mock_resp = MagicMock()
@@ -452,12 +482,14 @@ class TestExamplePluginIntegration:
         cfg = PluginConfig(
             enabled=True,
             auto_discover=False,
-            plugins=[{
-                "name": "datadog",
-                "module": "routerbot.core.plugins.examples.datadog_plugin",
-                "class": "DatadogCallbackHook",
-                "config": {"prefix": "test"},
-            }],
+            plugins=[
+                {
+                    "name": "datadog",
+                    "module": "routerbot.core.plugins.examples.datadog_plugin",
+                    "class": "DatadogCallbackHook",
+                    "config": {"prefix": "test"},
+                }
+            ],
         )
         mgr = PluginManager(cfg)
         loaded = await mgr.load_all()

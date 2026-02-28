@@ -652,9 +652,7 @@ class TestHashiCorpVaultBackend:
     def test_get_secret_empty_data_raises(self) -> None:
         with patch("routerbot.core.secrets.vault.hvac", create=True) as mock_hvac:
             mock_client = MagicMock()
-            mock_client.secrets.kv.v2.read_secret_version.return_value = {
-                "data": {"data": {}}
-            }
+            mock_client.secrets.kv.v2.read_secret_version.return_value = {"data": {"data": {}}}
             mock_hvac.Client.return_value = mock_client
 
             vault_mod = __import__("routerbot.core.secrets.vault", fromlist=["_HAS_HVAC"])
@@ -699,9 +697,7 @@ class TestHashiCorpVaultBackend:
                 with patch.dict("os.environ", {"VAULT_ADDR": "http://vault:8200", "VAULT_TOKEN": "s.test"}):
                     backend = HashiCorpVaultBackend()
                     assert backend.prefix == "vault"
-                    mock_hvac.Client.assert_called_with(
-                        url="http://vault:8200", token="s.test"
-                    )
+                    mock_hvac.Client.assert_called_with(url="http://vault:8200", token="s.test")
             finally:
                 vault_mod._HAS_HVAC = original
 
@@ -724,18 +720,20 @@ class TestConfigIntegration:
 
         config_mod.configure_secret_resolver(resolver)
         try:
-            cfg = config_mod.load_config(config_data={
-                "model_list": [
-                    {
-                        "model_name": "gpt-4o",
-                        "provider_params": {
-                            "model": "openai/gpt-4o",
-                            "api_key": "aws_secret/openai-key",
-                        },
-                    }
-                ],
-                "general_settings": {"master_key": "test-master-key"},
-            })
+            cfg = config_mod.load_config(
+                config_data={
+                    "model_list": [
+                        {
+                            "model_name": "gpt-4o",
+                            "provider_params": {
+                                "model": "openai/gpt-4o",
+                                "api_key": "aws_secret/openai-key",
+                            },
+                        }
+                    ],
+                    "general_settings": {"master_key": "test-master-key"},
+                }
+            )
             assert cfg.model_list[0].provider_params.api_key == "sk-from-aws"
         finally:
             config_mod.reset_secret_resolver()
@@ -746,18 +744,20 @@ class TestConfigIntegration:
 
         config_mod.reset_secret_resolver()
         monkeypatch.setenv("ROUTERBOT_MASTER_KEY", "key")
-        cfg = config_mod.load_config(config_data={
-            "model_list": [
-                {
-                    "model_name": "test",
-                    "provider_params": {
-                        "model": "openai/test",
-                        "api_key": "aws_secret/some-key",
-                    },
-                }
-            ],
-            "general_settings": {"master_key": "key"},
-        })
+        cfg = config_mod.load_config(
+            config_data={
+                "model_list": [
+                    {
+                        "model_name": "test",
+                        "provider_params": {
+                            "model": "openai/test",
+                            "api_key": "aws_secret/some-key",
+                        },
+                    }
+                ],
+                "general_settings": {"master_key": "key"},
+            }
+        )
         # Without resolver, the string passes through unchanged
         assert cfg.model_list[0].provider_params.api_key == "aws_secret/some-key"
 
@@ -772,19 +772,21 @@ class TestConfigIntegration:
         resolver.register_backend(FakeBackend("aws_secret", {"other": "secret-value"}))
         config_mod.configure_secret_resolver(resolver)
         try:
-            cfg = config_mod.load_config(config_data={
-                "model_list": [
-                    {
-                        "model_name": "m1",
-                        "provider_params": {"model": "openai/a", "api_key": "aws_secret/other"},
-                    },
-                    {
-                        "model_name": "m2",
-                        "provider_params": {"model": "openai/b", "api_key": "os.environ/MY_KEY"},
-                    },
-                ],
-                "general_settings": {"master_key": "m"},
-            })
+            cfg = config_mod.load_config(
+                config_data={
+                    "model_list": [
+                        {
+                            "model_name": "m1",
+                            "provider_params": {"model": "openai/a", "api_key": "aws_secret/other"},
+                        },
+                        {
+                            "model_name": "m2",
+                            "provider_params": {"model": "openai/b", "api_key": "os.environ/MY_KEY"},
+                        },
+                    ],
+                    "general_settings": {"master_key": "m"},
+                }
+            )
             assert cfg.model_list[0].provider_params.api_key == "secret-value"
             assert cfg.model_list[1].provider_params.api_key == "env-value"
         finally:

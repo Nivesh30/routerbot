@@ -153,18 +153,14 @@ _BUILTIN_PATTERNS: list[SecretPattern] = [
     # --- Connection Strings ---
     SecretPattern(
         name="database_url",
-        pattern=re.compile(
-            r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)://[^\s\"']+:[^\s\"']+@[^\s\"']+"
-        ),
+        pattern=re.compile(r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)://[^\s\"']+:[^\s\"']+@[^\s\"']+"),
         description="Database connection URL with credentials",
     ),
 ]
 
 # Subset of patterns that are high-precision (low false-positive rate)
 # Azure hex key is too generic, so we exclude it from default
-_DEFAULT_PATTERN_NAMES: frozenset[str] = frozenset(
-    p.name for p in _BUILTIN_PATTERNS if p.name != "azure_key"
-)
+_DEFAULT_PATTERN_NAMES: frozenset[str] = frozenset(p.name for p in _BUILTIN_PATTERNS if p.name != "azure_key")
 
 
 # ---------------------------------------------------------------------------
@@ -215,11 +211,7 @@ class SecretDetector:
         if patterns is not None:
             self._patterns = list(patterns)
         else:
-            self._patterns = [
-                p
-                for p in _BUILTIN_PATTERNS
-                if include_azure_key or p.name in _DEFAULT_PATTERN_NAMES
-            ]
+            self._patterns = [p for p in _BUILTIN_PATTERNS if include_azure_key or p.name in _DEFAULT_PATTERN_NAMES]
 
         if custom_patterns:
             self._patterns.extend(custom_patterns)
@@ -269,9 +261,7 @@ def _shannon_entropy(text: str) -> float:
         return 0.0
     counts = Counter(text)
     length = len(text)
-    return -sum(
-        (count / length) * math.log2(count / length) for count in counts.values()
-    )
+    return -sum((count / length) * math.log2(count / length) for count in counts.values())
 
 
 # ---------------------------------------------------------------------------

@@ -103,9 +103,7 @@ def _make_embedding_response() -> EmbeddingResponse:
 
 
 def _make_image_response() -> ImageResponse:
-    return ImageResponse(
-        data=[ImageData(url="https://example.com/image.png", revised_prompt="a cat")]
-    )
+    return ImageResponse(data=[ImageData(url="https://example.com/image.png", revised_prompt="a cat")])
 
 
 def _make_rerank_response() -> RerankResponse:

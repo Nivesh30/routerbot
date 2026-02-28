@@ -13,7 +13,6 @@ Covers:
 
 from __future__ import annotations
 
-import pytest
 from httpx import ASGITransport, AsyncClient
 
 from routerbot.auth.rbac import AuthContext, Role
@@ -324,4 +323,4 @@ class TestHelperFunctions:
         req = MagicMock()
         req.headers = {}
         req.client = None
-        assert get_client_ip(req, trust_proxy=False) == "0.0.0.0"
+        assert get_client_ip(req, trust_proxy=False) == "0.0.0.0"  # noqa: S104

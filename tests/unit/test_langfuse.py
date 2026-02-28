@@ -128,7 +128,6 @@ def error_data() -> RequestErrorData:
 
 
 class TestLangfuseCredentials:
-
     def test_auth_header(self, credentials: LangfuseCredentials) -> None:
         expected = base64.b64encode(b"pk-test-123:sk-test-456").decode()
         assert credentials.auth_header == f"Basic {expected}"
@@ -144,10 +143,11 @@ class TestLangfuseCredentials:
 
 
 class TestLangfuseClient:
-
     @pytest.mark.asyncio()
     async def test_enqueue_adds_to_queue(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(credentials, http_client=mock_http_client, flush_interval=999)
         await client.start()
@@ -160,7 +160,9 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_flush_sends_batch(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(credentials, http_client=mock_http_client, flush_interval=999)
         await client.start()
@@ -183,7 +185,9 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_flush_clears_queue(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(credentials, http_client=mock_http_client, flush_interval=999)
         await client.start()
@@ -196,10 +200,15 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_auto_flush_on_max_batch_size(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(
-            credentials, http_client=mock_http_client, max_batch_size=3, flush_interval=999,
+            credentials,
+            http_client=mock_http_client,
+            max_batch_size=3,
+            flush_interval=999,
         )
         await client.start()
         try:
@@ -214,7 +223,9 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_flush_empty_queue_noop(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(credentials, http_client=mock_http_client, flush_interval=999)
         await client.start()
@@ -226,7 +237,8 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_send_retry_on_failure(
-        self, credentials: LangfuseCredentials,
+        self,
+        credentials: LangfuseCredentials,
     ) -> None:
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         # First call raises, second succeeds
@@ -248,7 +260,8 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_send_drops_after_two_failures(
-        self, credentials: LangfuseCredentials,
+        self,
+        credentials: LangfuseCredentials,
     ) -> None:
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post = AsyncMock(side_effect=httpx.HTTPError("down"))
@@ -267,7 +280,8 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_send_retries_on_server_error(
-        self, credentials: LangfuseCredentials,
+        self,
+        credentials: LangfuseCredentials,
     ) -> None:
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         err_resp = MagicMock(spec=httpx.Response)
@@ -289,7 +303,9 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_shutdown_flushes(
-        self, credentials: LangfuseCredentials, mock_http_client: AsyncMock,
+        self,
+        credentials: LangfuseCredentials,
+        mock_http_client: AsyncMock,
     ) -> None:
         client = LangfuseClient(credentials, http_client=mock_http_client, flush_interval=999)
         await client.start()
@@ -300,7 +316,8 @@ class TestLangfuseClient:
 
     @pytest.mark.asyncio()
     async def test_no_http_client_logs_warning(
-        self, credentials: LangfuseCredentials,
+        self,
+        credentials: LangfuseCredentials,
     ) -> None:
         """If _http is None (shouldn't happen normally), flush logs a warning."""
         client = LangfuseClient(credentials, flush_interval=999)
@@ -317,7 +334,6 @@ class TestLangfuseClient:
 
 
 class TestLangfuseCallback:
-
     @pytest.mark.asyncio()
     async def test_on_request_start_creates_trace(
         self,
@@ -560,7 +576,6 @@ class TestLangfuseCallback:
 
 
 class TestHelpers:
-
     def test_epoch_to_iso(self) -> None:
         result = _epoch_to_iso(1700000000.123)
         assert result == "2023-11-14T22:13:20.123Z"
@@ -576,7 +591,6 @@ class TestHelpers:
 
 
 class TestCreateLangfuseCallback:
-
     def test_creates_callback(self) -> None:
         cb = create_langfuse_callback(
             public_key="pk-123",

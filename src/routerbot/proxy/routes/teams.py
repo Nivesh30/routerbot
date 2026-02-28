@@ -264,9 +264,7 @@ async def team_member_add(
             content={"error": "User is already a member of this team"},
         )
 
-    membership = await team_repo.add_member(
-        _uuid.UUID(body.team_id), _uuid.UUID(body.user_id), role=body.role
-    )
+    membership = await team_repo.add_member(_uuid.UUID(body.team_id), _uuid.UUID(body.user_id), role=body.role)
     return JSONResponse(
         status_code=201,
         content={
@@ -292,8 +290,10 @@ async def team_member_remove(
     if not removed:
         return JSONResponse(status_code=404, content={"error": "Membership not found"})
 
-    return JSONResponse(content={
-        "status": "removed",
-        "team_id": body.team_id,
-        "user_id": body.user_id,
-    })
+    return JSONResponse(
+        content={
+            "status": "removed",
+            "team_id": body.team_id,
+            "user_id": body.user_id,
+        }
+    )

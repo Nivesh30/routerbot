@@ -39,7 +39,7 @@ test-all: ## Run all tests
 
 # ─── Run ───────────────────────────────────────────────────
 run: ## Start the RouterBot proxy server
-	uv run uvicorn routerbot.proxy.main:app --host 0.0.0.0 --port 4000 --reload
+	uv run uvicorn routerbot.proxy.app:app --host 0.0.0.0 --port 4000 --reload
 
 # ─── Build ─────────────────────────────────────────────────
 build: ## Build Python package
@@ -67,7 +67,7 @@ docker-down: ## Stop all Docker services
 	@echo "✅ Services stopped"
 
 docker-build: ## Build the RouterBot Docker image
-	docker build --target production -t routerbot:latest .
+	docker build -t routerbot:latest .
 
 # ─── Utilities ─────────────────────────────────────────────
 clean: ## Remove build artifacts and caches

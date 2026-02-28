@@ -58,11 +58,13 @@ class SSOProviderConfig:
     idp_cert: str | None = None
     sp_entity_id: str | None = None
     # Attribute mapping
-    attribute_mapping: dict[str, str] = field(default_factory=lambda: {
-        "email": "email",
-        "name": "name",
-        "user_id": "sub",
-    })
+    attribute_mapping: dict[str, str] = field(
+        default_factory=lambda: {
+            "email": "email",
+            "name": "name",
+            "user_id": "sub",
+        }
+    )
 
 
 @dataclass
@@ -378,10 +380,7 @@ class SSOManager:
 
     def list_providers(self) -> list[dict[str, str]]:
         """Return a list of configured SSO providers (name + type)."""
-        return [
-            {"name": p.name, "type": p.provider_type}
-            for p in self._providers.values()
-        ]
+        return [{"name": p.name, "type": p.provider_type} for p in self._providers.values()]
 
     def generate_state(self, provider_name: str) -> str:
         """Generate a CSRF state token for an SSO flow.

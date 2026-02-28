@@ -63,14 +63,14 @@ def _auth_headers(key: str = MASTER_KEY) -> dict[str, str]:
 
 @pytest_asyncio.fixture()
 async def client() -> AsyncClient:
-    config = _make_config([
-        ("gpt-4o", "openai/gpt-4o"),
-        ("claude-3", "anthropic/claude-3-opus-20240229"),
-    ])
+    config = _make_config(
+        [
+            ("gpt-4o", "openai/gpt-4o"),
+            ("claude-3", "anthropic/claude-3-opus-20240229"),
+        ]
+    )
     test_app = create_app(config=config)
-    async with AsyncClient(
-        transport=ASGITransport(app=test_app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         yield ac
 
 
@@ -78,9 +78,7 @@ async def client() -> AsyncClient:
 async def empty_client() -> AsyncClient:
     config = _make_config(models=[])
     test_app = create_app(config=config)
-    async with AsyncClient(
-        transport=ASGITransport(app=test_app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         yield ac
 
 
@@ -469,7 +467,9 @@ class TestEdgeCases:
 
         # Info
         resp = await empty_client.get(
-            "/model/info", params={"model_name": "test"}, headers=headers,
+            "/model/info",
+            params={"model_name": "test"},
+            headers=headers,
         )
         assert resp.json()["rpm"] == 500
 

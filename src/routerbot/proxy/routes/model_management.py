@@ -319,10 +319,12 @@ async def update_model(body: ModelUpdateRequest, request: Request) -> JSONRespon
 
     logger.info("Updated model '%s'", body.model_name)
 
-    return JSONResponse(content={
-        "status": "updated",
-        "model": _model_entry_to_dict(entry),
-    })
+    return JSONResponse(
+        content={
+            "status": "updated",
+            "model": _model_entry_to_dict(entry),
+        }
+    )
 
 
 @router.post("/delete", summary="Remove a model")
@@ -349,10 +351,12 @@ async def delete_model(body: ModelDeleteRequest, request: Request) -> JSONRespon
     removed = config.model_list.pop(idx)
     logger.info("Deleted model '%s'", removed.model_name)
 
-    return JSONResponse(content={
-        "status": "deleted",
-        "model_name": body.model_name,
-    })
+    return JSONResponse(
+        content={
+            "status": "deleted",
+            "model_name": body.model_name,
+        }
+    )
 
 
 @router.post("/test_connection", summary="Test model connectivity")
@@ -381,12 +385,14 @@ async def test_connection(body: ModelTestRequest, request: Request) -> JSONRespo
     # Try using the router to send a minimal request
     router_instance = getattr(state, "router", None)
     if router_instance is None:
-        return JSONResponse(content={
-            "status": "error",
-            "model_name": body.model_name,
-            "message": "Router not initialized",
-            "latency_ms": 0,
-        })
+        return JSONResponse(
+            content={
+                "status": "error",
+                "model_name": body.model_name,
+                "message": "Router not initialized",
+                "latency_ms": 0,
+            }
+        )
 
     start = time.perf_counter()
     try:
@@ -397,13 +403,15 @@ async def test_connection(body: ModelTestRequest, request: Request) -> JSONRespo
             max_tokens=1,
         )
         latency_ms = (time.perf_counter() - start) * 1000
-        return JSONResponse(content={
-            "status": "success",
-            "model_name": body.model_name,
-            "provider_model": provider_model,
-            "latency_ms": round(latency_ms, 1),
-            "message": "Connection successful",
-        })
+        return JSONResponse(
+            content={
+                "status": "success",
+                "model_name": body.model_name,
+                "provider_model": provider_model,
+                "latency_ms": round(latency_ms, 1),
+                "message": "Connection successful",
+            }
+        )
     except Exception as exc:
         latency_ms = (time.perf_counter() - start) * 1000
         return JSONResponse(

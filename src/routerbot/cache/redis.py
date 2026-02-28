@@ -68,14 +68,9 @@ class RedisCacheBackend:
             try:
                 import redis.asyncio as aioredis
             except ImportError as exc:
-                msg = (
-                    "redis package is required for RedisCacheBackend. "
-                    "Install with: pip install redis"
-                )
+                msg = "redis package is required for RedisCacheBackend. Install with: pip install redis"
                 raise ImportError(msg) from exc
-            self._client = aioredis.from_url(
-                self._redis_url, decode_responses=True
-            )
+            self._client = aioredis.from_url(self._redis_url, decode_responses=True)
         return self._client
 
     def _make_key(self, key: str) -> str:

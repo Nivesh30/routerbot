@@ -33,14 +33,9 @@ def _build_judge_prompt(
 
     parts.append("## Criteria - score each on the given scale\n")
     for c in criteria:
-        parts.append(
-            f"- **{c.name}** ({c.scale_min}-{c.scale_max}): {c.description}"
-        )
+        parts.append(f"- **{c.name}** ({c.scale_min}-{c.scale_max}): {c.description}")
 
-    parts.append(
-        "\nRespond with JSON: "
-        '{"scores": {"<criteria_name>": <number>, ...}, "reasoning": "<text>"}'
-    )
+    parts.append('\nRespond with JSON: {"scores": {"<criteria_name>": <number>, ...}, "reasoning": "<text>"}')
     return "\n".join(parts)
 
 

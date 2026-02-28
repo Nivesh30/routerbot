@@ -20,7 +20,6 @@ from routerbot.observability.prometheus import (
     metrics_response,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -91,26 +90,38 @@ class TestPrometheusCallback:
         await callback.on_request_end(data)
 
         # Request count
-        assert registry.get_sample_value(
-            "routerbot_request_total",
-            {"model": "gpt-4", "provider": "openai", "status": "success"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_request_total",
+                {"model": "gpt-4", "provider": "openai", "status": "success"},
+            )
+            == 1.0
+        )
 
         # Tokens
-        assert registry.get_sample_value(
-            "routerbot_tokens_total",
-            {"model": "gpt-4", "provider": "openai", "type": "prompt"},
-        ) == 100.0
-        assert registry.get_sample_value(
-            "routerbot_tokens_total",
-            {"model": "gpt-4", "provider": "openai", "type": "completion"},
-        ) == 50.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_tokens_total",
+                {"model": "gpt-4", "provider": "openai", "type": "prompt"},
+            )
+            == 100.0
+        )
+        assert (
+            registry.get_sample_value(
+                "routerbot_tokens_total",
+                {"model": "gpt-4", "provider": "openai", "type": "completion"},
+            )
+            == 50.0
+        )
 
         # Cost
-        assert registry.get_sample_value(
-            "routerbot_cost_total",
-            {"model": "gpt-4", "provider": "openai"},
-        ) == 0.005
+        assert (
+            registry.get_sample_value(
+                "routerbot_cost_total",
+                {"model": "gpt-4", "provider": "openai"},
+            )
+            == 0.005
+        )
 
         # Active requests back to 0
         assert registry.get_sample_value("routerbot_active_requests") == 0.0
@@ -129,10 +140,13 @@ class TestPrometheusCallback:
         await callback.on_request_end(data)
 
         # Tokens should not be recorded
-        assert registry.get_sample_value(
-            "routerbot_tokens_total",
-            {"model": "gpt-4", "provider": "openai", "type": "prompt"},
-        ) is None
+        assert (
+            registry.get_sample_value(
+                "routerbot_tokens_total",
+                {"model": "gpt-4", "provider": "openai", "type": "prompt"},
+            )
+            is None
+        )
 
     async def test_request_error_records_error_metrics(self, callback, registry):
         await callback.on_request_start(RequestStartData(request_id="r1", model="gpt-4"))
@@ -146,15 +160,21 @@ class TestPrometheusCallback:
         )
         await callback.on_request_error(data)
 
-        assert registry.get_sample_value(
-            "routerbot_request_total",
-            {"model": "gpt-4", "provider": "openai", "status": "error"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_request_total",
+                {"model": "gpt-4", "provider": "openai", "status": "error"},
+            )
+            == 1.0
+        )
 
-        assert registry.get_sample_value(
-            "routerbot_errors_total",
-            {"model": "gpt-4", "provider": "openai", "error_type": "TimeoutError"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_errors_total",
+                {"model": "gpt-4", "provider": "openai", "error_type": "TimeoutError"},
+            )
+            == 1.0
+        )
 
         assert registry.get_sample_value("routerbot_active_requests") == 0.0
 
@@ -167,10 +187,13 @@ class TestPrometheusCallback:
         )
         await callback.on_request_error(data)
 
-        assert registry.get_sample_value(
-            "routerbot_errors_total",
-            {"model": "gpt-4", "provider": "openai", "error_type": "unknown"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_errors_total",
+                {"model": "gpt-4", "provider": "openai", "error_type": "unknown"},
+            )
+            == 1.0
+        )
 
     async def test_latency_histogram(self, callback, registry):
         """Latency is recorded in seconds (not ms)."""
@@ -183,10 +206,13 @@ class TestPrometheusCallback:
         await callback.on_request_end(data)
 
         # 2500ms = 2.5s, bucket le="5.0" should have count 1
-        assert registry.get_sample_value(
-            "routerbot_request_duration_seconds_bucket",
-            {"model": "gpt-4", "provider": "openai", "le": "5.0"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_request_duration_seconds_bucket",
+                {"model": "gpt-4", "provider": "openai", "le": "5.0"},
+            )
+            == 1.0
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -199,33 +225,53 @@ class TestConvenienceMethods:
 
     def test_cache_hit(self, callback, registry):
         callback.record_cache_hit()
-        assert registry.get_sample_value(
-            "routerbot_cache_hits_total", {"result": "hit"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_cache_hits_total",
+                {"result": "hit"},
+            )
+            == 1.0
+        )
 
     def test_cache_miss(self, callback, registry):
         callback.record_cache_miss()
-        assert registry.get_sample_value(
-            "routerbot_cache_hits_total", {"result": "miss"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_cache_hits_total",
+                {"result": "miss"},
+            )
+            == 1.0
+        )
 
     def test_rate_limit(self, callback, registry):
         callback.record_rate_limit("gpt-4")
-        assert registry.get_sample_value(
-            "routerbot_rate_limit_hits_total", {"model": "gpt-4"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_rate_limit_hits_total",
+                {"model": "gpt-4"},
+            )
+            == 1.0
+        )
 
     def test_provider_health_healthy(self, callback, registry):
         callback.set_provider_health("openai", healthy=True)
-        assert registry.get_sample_value(
-            "routerbot_provider_health", {"provider": "openai"},
-        ) == 1.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_provider_health",
+                {"provider": "openai"},
+            )
+            == 1.0
+        )
 
     def test_provider_health_unhealthy(self, callback, registry):
         callback.set_provider_health("openai", healthy=False)
-        assert registry.get_sample_value(
-            "routerbot_provider_health", {"provider": "openai"},
-        ) == 0.0
+        assert (
+            registry.get_sample_value(
+                "routerbot_provider_health",
+                {"provider": "openai"},
+            )
+            == 0.0
+        )
 
 
 # ---------------------------------------------------------------------------

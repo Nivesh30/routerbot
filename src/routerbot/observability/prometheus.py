@@ -156,26 +156,34 @@ class PrometheusCallback(BaseCallback):
         provider = data.provider
 
         self._metrics["request_total"].labels(
-            model=model, provider=provider, status="success",
+            model=model,
+            provider=provider,
+            status="success",
         ).inc()
 
         self._metrics["request_duration"].labels(
-            model=model, provider=provider,
+            model=model,
+            provider=provider,
         ).observe(data.latency_ms / 1000.0)
 
         if data.tokens_prompt > 0:
             self._metrics["tokens_total"].labels(
-                model=model, provider=provider, type="prompt",
+                model=model,
+                provider=provider,
+                type="prompt",
             ).inc(data.tokens_prompt)
 
         if data.tokens_completion > 0:
             self._metrics["tokens_total"].labels(
-                model=model, provider=provider, type="completion",
+                model=model,
+                provider=provider,
+                type="completion",
             ).inc(data.tokens_completion)
 
         if data.cost > 0:
             self._metrics["cost_total"].labels(
-                model=model, provider=provider,
+                model=model,
+                provider=provider,
             ).inc(data.cost)
 
         self._metrics["active_requests"].dec()
@@ -186,11 +194,15 @@ class PrometheusCallback(BaseCallback):
         provider = data.provider
 
         self._metrics["request_total"].labels(
-            model=model, provider=provider, status="error",
+            model=model,
+            provider=provider,
+            status="error",
         ).inc()
 
         self._metrics["errors_total"].labels(
-            model=model, provider=provider, error_type=data.error_type or "unknown",
+            model=model,
+            provider=provider,
+            error_type=data.error_type or "unknown",
         ).inc()
 
         self._metrics["active_requests"].dec()

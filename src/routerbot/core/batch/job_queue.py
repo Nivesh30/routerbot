@@ -68,13 +68,9 @@ class JobQueue:
             If the queue has reached its maximum pending capacity.
         """
         async with self._lock:
-            pending_count = sum(
-                1 for j in self._jobs.values() if j.status == JobStatus.PENDING
-            )
+            pending_count = sum(1 for j in self._jobs.values() if j.status == JobStatus.PENDING)
             if pending_count >= self.config.max_pending_jobs:
-                raise QueueFullError(
-                    f"Queue full: {pending_count}/{self.config.max_pending_jobs} pending jobs"
-                )
+                raise QueueFullError(f"Queue full: {pending_count}/{self.config.max_pending_jobs} pending jobs")
 
             job_id = f"job_{uuid.uuid4().hex[:16]}"
             now = datetime.now(tz=UTC)

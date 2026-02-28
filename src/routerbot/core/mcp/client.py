@@ -107,9 +107,7 @@ class MCPClient:
         except Exception as exc:
             self._health = MCPServerHealth.UNHEALTHY
             logger.error("Failed to connect to MCP server '%s': %s", self.server_name, exc)
-            raise MCPClientError(
-                f"Failed to connect to MCP server '{self.server_name}': {exc}"
-            ) from exc
+            raise MCPClientError(f"Failed to connect to MCP server '{self.server_name}': {exc}") from exc
 
     async def disconnect(self) -> None:
         """Close the connection to the MCP server."""
@@ -162,17 +160,22 @@ class MCPClient:
         if not self._initialized:
             await self.connect()
 
-        request = self._build_jsonrpc("tools/call", {
-            "name": tool_name,
-            "arguments": arguments or {},
-        })
+        request = self._build_jsonrpc(
+            "tools/call",
+            {
+                "name": tool_name,
+                "arguments": arguments or {},
+            },
+        )
 
         try:
             response = await self._send_request(request)
         except Exception as exc:
             logger.error(
                 "MCP tool call failed: server='%s', tool='%s': %s",
-                self.server_name, tool_name, exc,
+                self.server_name,
+                tool_name,
+                exc,
             )
             return MCPToolResult(
                 server_name=self.server_name,
@@ -264,14 +267,17 @@ class MCPClient:
 
     async def _initialize(self) -> None:
         """Send the MCP initialize request."""
-        request = self._build_jsonrpc("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {
-                "name": "routerbot",
-                "version": "0.1.0",
+        request = self._build_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {
+                    "name": "routerbot",
+                    "version": "0.1.0",
+                },
             },
-        })
+        )
         response = await self._send_request(request)
 
         # Validate server capabilities
@@ -317,12 +323,14 @@ class MCPClient:
                 required=input_schema_data.get("required", []),
             )
 
-            self._tools.append(MCPTool(
-                name=tool_data["name"],
-                description=tool_data.get("description", ""),
-                input_schema=input_schema,
-                server_name=self.server_name,
-            ))
+            self._tools.append(
+                MCPTool(
+                    name=tool_data["name"],
+                    description=tool_data.get("description", ""),
+                    input_schema=input_schema,
+                    server_name=self.server_name,
+                )
+            )
 
     # ------------------------------------------------------------------
     # Internal - transport layer
@@ -413,6 +421,6 @@ class MCPClient:
             and self._process is not None
             and self._process.stdin is not None
         ):
-                payload = json.dumps(notification) + "\n"
-                self._process.stdin.write(payload.encode())
-                await self._process.stdin.drain()
+            payload = json.dumps(notification) + "\n"
+            self._process.stdin.write(payload.encode())
+            await self._process.stdin.drain()

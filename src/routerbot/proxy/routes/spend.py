@@ -116,12 +116,11 @@ async def spend_report(
     repo = SpendRepository(session)
     by_model = await repo.cost_by_model()
 
-    return JSONResponse(content={
-        "report": [
-            {"model": model, "total_cost": cost}
-            for model, cost in by_model
-        ],
-    })
+    return JSONResponse(
+        content={
+            "report": [{"model": model, "total_cost": cost} for model, cost in by_model],
+        }
+    )
 
 
 @router.get("/keys", summary="Spend per key")
@@ -137,9 +136,11 @@ async def spend_keys(
     total_cost = await repo.total_cost_by_key(_uuid.UUID(key_id))
     prompt_tokens, completion_tokens = await repo.token_totals(key_id=_uuid.UUID(key_id))
 
-    return JSONResponse(content={
-        "key_id": key_id,
-        "total_cost": total_cost,
-        "tokens_prompt": prompt_tokens,
-        "tokens_completion": completion_tokens,
-    })
+    return JSONResponse(
+        content={
+            "key_id": key_id,
+            "total_cost": total_cost,
+            "tokens_prompt": prompt_tokens,
+            "tokens_completion": completion_tokens,
+        }
+    )

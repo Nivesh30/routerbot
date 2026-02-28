@@ -61,9 +61,7 @@ class PromptManager:
         Variables are auto-detected from ``{{var}}`` placeholders if not provided.
         """
         if len(self._templates) >= self.config.max_prompt_templates:
-            raise PromptCapacityError(
-                f"Max templates reached: {self.config.max_prompt_templates}"
-            )
+            raise PromptCapacityError(f"Max templates reached: {self.config.max_prompt_templates}")
 
         template_id = f"pt_{uuid.uuid4().hex[:12]}"
         now = datetime.now(tz=UTC)
@@ -256,10 +254,7 @@ class PromptManager:
         variables = variables or {}
 
         # Check required variables
-        missing = [
-            v.name for v in template_vars
-            if v.required and v.name not in variables and not v.default_value
-        ]
+        missing = [v.name for v in template_vars if v.required and v.name not in variables and not v.default_value]
         if missing:
             raise PromptRenderError(f"Missing required variables: {', '.join(missing)}")
 
@@ -375,10 +370,7 @@ class PromptManager:
             key = f"{template_id}:{version}"
             a = self._analytics.get(key)
             return [a] if a else []
-        return [
-            a for k, a in self._analytics.items()
-            if k.startswith(f"{template_id}:")
-        ]
+        return [a for k, a in self._analytics.items() if k.startswith(f"{template_id}:")]
 
     # -- Stats ---------------------------------------------------------------
 

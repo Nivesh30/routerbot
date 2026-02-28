@@ -163,9 +163,7 @@ class ProviderBudgetManager:
     # Configuration
     # ------------------------------------------------------------------
 
-    def set_provider_budget(
-        self, provider: str, config: BudgetConfig
-    ) -> None:
+    def set_provider_budget(self, provider: str, config: BudgetConfig) -> None:
         """Set or update budget for a provider."""
         self._provider_budgets[provider] = config
 
@@ -271,9 +269,7 @@ class ProviderBudgetManager:
             exceeded_by=exceeded,
         )
 
-    def get_available_providers(
-        self, providers: list[str]
-    ) -> list[str]:
+    def get_available_providers(self, providers: list[str]) -> list[str]:
         """Filter a list of providers to only those within budget.
 
         Providers without configured budgets are always included.
@@ -311,10 +307,7 @@ class ProviderBudgetManager:
 
     def get_all_provider_status(self) -> dict[str, BudgetCheckResult]:
         """Return budget status for all configured providers."""
-        return {
-            provider: self.check_provider_budget(provider)
-            for provider in self._provider_budgets
-        }
+        return {provider: self.check_provider_budget(provider) for provider in self._provider_budgets}
 
     def get_all_tag_status(self) -> dict[str, BudgetCheckResult]:
         """Return budget status for all configured tags."""

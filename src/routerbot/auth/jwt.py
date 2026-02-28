@@ -46,12 +46,14 @@ class JWTConfig:
     issuer: str | None = None
     audience: str | None = None
     algorithms: list[str] = field(default_factory=lambda: list(DEFAULT_ALGORITHMS))
-    claim_mapping: dict[str, str] = field(default_factory=lambda: {
-        "user_id": "sub",
-        "email": "email",
-        "team_id": "org_id",
-        "role": "routerbot_role",
-    })
+    claim_mapping: dict[str, str] = field(
+        default_factory=lambda: {
+            "user_id": "sub",
+            "email": "email",
+            "team_id": "org_id",
+            "role": "routerbot_role",
+        }
+    )
     cache_ttl: int = 300  # seconds — how long to cache verified tokens
 
 

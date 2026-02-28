@@ -147,9 +147,17 @@ class TestMCPClient:
 
         # Mock the initialization sequence
         init_response = {"result": {"serverInfo": {"name": "TestMCP", "version": "1.0"}}}
-        tools_response = {"result": {"tools": [
-            {"name": "search", "description": "Search stuff", "inputSchema": {"type": "object", "properties": {}}},
-        ]}}
+        tools_response = {
+            "result": {
+                "tools": [
+                    {
+                        "name": "search",
+                        "description": "Search stuff",
+                        "inputSchema": {"type": "object", "properties": {}},
+                    },
+                ]
+            }
+        }
 
         with patch.object(client, "_send_request", new_callable=AsyncMock) as mock_send:
             mock_send.side_effect = [init_response, tools_response]
@@ -350,8 +358,10 @@ class TestMCPServerRegistry:
         registry = MCPServerRegistry(health_check_interval=0)
         public = MCPServerConfig(name="pub", url="http://pub:3000", visibility="public")
         private = MCPServerConfig(
-            name="priv", url="http://priv:3000",
-            visibility="private", allowed_teams=["data-team"],
+            name="priv",
+            url="http://priv:3000",
+            visibility="private",
+            allowed_teams=["data-team"],
         )
 
         with patch.object(MCPClient, "connect", new_callable=AsyncMock):
@@ -397,9 +407,7 @@ class TestMCPServerRegistry:
     @pytest.mark.asyncio
     async def test_call_tool_unknown_server(self) -> None:
         registry = MCPServerRegistry(health_check_interval=0)
-        result = await registry.call_tool(
-            MCPToolCall(server_name="unknown", tool_name="x")
-        )
+        result = await registry.call_tool(MCPToolCall(server_name="unknown", tool_name="x"))
         assert result.is_error
         assert "not found" in result.content[0]["text"]
 
@@ -501,19 +509,24 @@ class TestMCPRoutes:
 
     def test_call_tool_success(self) -> None:
         registry = MagicMock()
-        registry.call_tool = AsyncMock(return_value=MCPToolResult(
-            server_name="github",
-            tool_name="search",
-            content=[{"type": "text", "text": "Found 3 results"}],
-        ))
+        registry.call_tool = AsyncMock(
+            return_value=MCPToolResult(
+                server_name="github",
+                tool_name="search",
+                content=[{"type": "text", "text": "Found 3 results"}],
+            )
+        )
 
         app = self._create_app_with_registry(registry)
         client = TestClient(app)
-        resp = client.post("/v1/mcp/call", json={
-            "server_name": "github",
-            "tool_name": "search",
-            "arguments": {"query": "test"},
-        })
+        resp = client.post(
+            "/v1/mcp/call",
+            json={
+                "server_name": "github",
+                "tool_name": "search",
+                "arguments": {"query": "test"},
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["tool_name"] == "search"
@@ -521,20 +534,25 @@ class TestMCPRoutes:
 
     def test_call_tool_error_result(self) -> None:
         registry = MagicMock()
-        registry.call_tool = AsyncMock(return_value=MCPToolResult(
-            server_name="github",
-            tool_name="broken",
-            content=[{"type": "text", "text": "Error: timeout"}],
-            is_error=True,
-        ))
+        registry.call_tool = AsyncMock(
+            return_value=MCPToolResult(
+                server_name="github",
+                tool_name="broken",
+                content=[{"type": "text", "text": "Error: timeout"}],
+                is_error=True,
+            )
+        )
 
         app = self._create_app_with_registry(registry)
         client = TestClient(app)
-        resp = client.post("/v1/mcp/call", json={
-            "server_name": "github",
-            "tool_name": "broken",
-            "arguments": {},
-        })
+        resp = client.post(
+            "/v1/mcp/call",
+            json={
+                "server_name": "github",
+                "tool_name": "broken",
+                "arguments": {},
+            },
+        )
         assert resp.status_code == 422
         assert resp.json()["is_error"] is True
 

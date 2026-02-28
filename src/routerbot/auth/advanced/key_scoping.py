@@ -90,37 +90,39 @@ class KeyScopeValidator:
                 )
 
         # Check allowed endpoints
-        if scope.allowed_endpoints and endpoint and not any(
-            fnmatch.fnmatch(endpoint, pattern) for pattern in scope.allowed_endpoints
+        if (
+            scope.allowed_endpoints
+            and endpoint
+            and not any(fnmatch.fnmatch(endpoint, pattern) for pattern in scope.allowed_endpoints)
         ):
-                return KeyScopeValidation(
-                    allowed=False,
-                    reason=f"Endpoint {endpoint!r} not allowed by scope",
-                    key_id=key_id,
-                    matched_scope=scope,
-                )
+            return KeyScopeValidation(
+                allowed=False,
+                reason=f"Endpoint {endpoint!r} not allowed by scope",
+                key_id=key_id,
+                matched_scope=scope,
+            )
 
         # Check allowed models
-        if scope.allowed_models and model and not any(
-            fnmatch.fnmatch(model, pattern) for pattern in scope.allowed_models
+        if (
+            scope.allowed_models
+            and model
+            and not any(fnmatch.fnmatch(model, pattern) for pattern in scope.allowed_models)
         ):
-                return KeyScopeValidation(
-                    allowed=False,
-                    reason=f"Model {model!r} not allowed by scope",
-                    key_id=key_id,
-                    matched_scope=scope,
-                )
+            return KeyScopeValidation(
+                allowed=False,
+                reason=f"Model {model!r} not allowed by scope",
+                key_id=key_id,
+                matched_scope=scope,
+            )
 
         # Check allowed methods
-        if scope.allowed_methods and method and method.upper() not in [
-            m.upper() for m in scope.allowed_methods
-        ]:
-                return KeyScopeValidation(
-                    allowed=False,
-                    reason=f"Method {method!r} not allowed by scope",
-                    key_id=key_id,
-                    matched_scope=scope,
-                )
+        if scope.allowed_methods and method and method.upper() not in [m.upper() for m in scope.allowed_methods]:
+            return KeyScopeValidation(
+                allowed=False,
+                reason=f"Method {method!r} not allowed by scope",
+                key_id=key_id,
+                matched_scope=scope,
+            )
 
         return KeyScopeValidation(
             allowed=True,
@@ -136,13 +138,7 @@ class KeyScopeValidator:
         """Return summary of registered scopes."""
         return {
             "total": len(self._scopes),
-            "with_endpoint_restrictions": sum(
-                1 for s in self._scopes.values() if s.allowed_endpoints
-            ),
-            "with_model_restrictions": sum(
-                1 for s in self._scopes.values() if s.allowed_models
-            ),
-            "with_expiration": sum(
-                1 for s in self._scopes.values() if s.expires_at
-            ),
+            "with_endpoint_restrictions": sum(1 for s in self._scopes.values() if s.allowed_endpoints),
+            "with_model_restrictions": sum(1 for s in self._scopes.values() if s.allowed_models),
+            "with_expiration": sum(1 for s in self._scopes.values() if s.expires_at),
         }

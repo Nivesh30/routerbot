@@ -199,10 +199,7 @@ class HealthManager:
     def stats(self) -> dict[str, Any]:
         total_pods = sum(len(pods) for pods in self._pod_states.values())
         healthy_pods = sum(
-            1
-            for pods in self._pod_states.values()
-            for p in pods
-            if self._classify_pod(p) == HealthStatus.HEALTHY
+            1 for pods in self._pod_states.values() for p in pods if self._classify_pod(p) == HealthStatus.HEALTHY
         )
         return {
             "gateways_monitored": len(self._pod_states),

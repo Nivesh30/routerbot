@@ -12,9 +12,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from routerbot.db.engine import _mask_url
+from routerbot.db.engine import _mask_url, create_session_factory
 from routerbot.db.engine import create_engine as rb_create_engine
-from routerbot.db.engine import create_session_factory
 from routerbot.db.models import (
     AuditLog,
     Base,
@@ -31,8 +30,7 @@ from routerbot.db.repositories.keys import KeyRepository
 from routerbot.db.repositories.spend import SpendRepository
 from routerbot.db.repositories.teams import TeamRepository
 from routerbot.db.repositories.users import UserRepository
-from routerbot.db.session import configure_session_factory, get_session, get_session_factory
-
+from routerbot.db.session import configure_session_factory, get_session_factory
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -430,9 +428,7 @@ class TestTeamRepository:
 
 @pytest.mark.anyio
 class TestSpendRepository:
-    async def _create_log(
-        self, session: AsyncSession, **kwargs
-    ) -> SpendLog:
+    async def _create_log(self, session: AsyncSession, **kwargs) -> SpendLog:
         defaults = {
             "model": "gpt-4o",
             "provider": "openai",

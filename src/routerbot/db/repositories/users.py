@@ -33,12 +33,7 @@ class UserRepository(BaseRepository[User]):
 
     async def list_active(self, *, offset: int = 0, limit: int = 100) -> list[User]:
         """Return only active users."""
-        stmt = (
-            select(User)
-            .where(User.is_active.is_(True))
-            .offset(offset)
-            .limit(limit)
-        )
+        stmt = select(User).where(User.is_active.is_(True)).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

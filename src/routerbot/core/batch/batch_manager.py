@@ -74,9 +74,7 @@ class BatchManager:
             raise BatchValidationError("Batch must contain at least one request")
 
         if len(requests) > self.config.max_batch_size:
-            raise BatchValidationError(
-                f"Batch too large: {len(requests)} > {self.config.max_batch_size}"
-            )
+            raise BatchValidationError(f"Batch too large: {len(requests)} > {self.config.max_batch_size}")
 
         # Check for duplicate custom_ids
         custom_ids = [r.custom_id for r in requests]
@@ -133,9 +131,7 @@ class BatchManager:
         async def _process_one(request: BatchRequest) -> BatchRequestResult:
             async with semaphore:
                 try:
-                    status_code, body = await self._handler(
-                        request.method, request.url, request.body
-                    )
+                    status_code, body = await self._handler(request.method, request.url, request.body)
                     return BatchRequestResult(
                         custom_id=request.custom_id,
                         status_code=status_code,
@@ -236,9 +232,7 @@ class BatchManager:
         }
 
 
-async def _default_handler(
-    method: str, url: str, body: dict[str, Any]
-) -> tuple[int, dict[str, Any]]:
+async def _default_handler(method: str, url: str, body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     """Default no-op handler that returns 200 for all requests."""
     return 200, {"status": "ok", "method": method, "url": url}
 

@@ -27,9 +27,7 @@ class TeamRepository(BaseRepository[Team]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def add_member(
-        self, team_id: uuid.UUID, user_id: uuid.UUID, *, role: str = "member"
-    ) -> UserTeam:
+    async def add_member(self, team_id: uuid.UUID, user_id: uuid.UUID, *, role: str = "member") -> UserTeam:
         """Add a user to a team with the given role."""
         membership = UserTeam(team_id=team_id, user_id=user_id, role=role)
         self._session.add(membership)
@@ -56,9 +54,7 @@ class TeamRepository(BaseRepository[Team]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_membership(
-        self, team_id: uuid.UUID, user_id: uuid.UUID
-    ) -> UserTeam | None:
+    async def get_membership(self, team_id: uuid.UUID, user_id: uuid.UUID) -> UserTeam | None:
         """Look up a specific user-team membership."""
         stmt = select(UserTeam).where(
             UserTeam.team_id == team_id,

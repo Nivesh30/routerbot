@@ -51,10 +51,7 @@ class HashiCorpVaultBackend(SecretBackend):
         namespace: str | None = None,
     ) -> None:
         if not _HAS_HVAC:
-            msg = (
-                "hvac is required for HashiCorp Vault integration. "
-                "Install it with: pip install hvac"
-            )
+            msg = "hvac is required for HashiCorp Vault integration. Install it with: pip install hvac"
             raise ImportError(msg)
 
         vault_url = url or os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")

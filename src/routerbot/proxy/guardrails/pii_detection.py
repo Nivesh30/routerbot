@@ -89,9 +89,7 @@ def _is_valid_ipv4(text: str) -> bool:
 _BUILTIN_PII_PATTERNS: list[PIIPattern] = [
     PIIPattern(
         name="email",
-        pattern=re.compile(
-            r"\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b"
-        ),
+        pattern=re.compile(r"\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b"),
         placeholder="[EMAIL]",
         description="Email address",
     ),
@@ -166,9 +164,7 @@ _BUILTIN_PII_PATTERNS: list[PIIPattern] = [
     ),
     PIIPattern(
         name="ipv6_address",
-        pattern=re.compile(
-            r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"
-        ),
+        pattern=re.compile(r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"),
         placeholder="[IP_ADDRESS]",
         description="IPv6 address",
     ),
@@ -240,9 +236,7 @@ class PIIDetector:
         if include_address:
             allowed.add("street_address")
 
-        self._patterns = [
-            p for p in _BUILTIN_PII_PATTERNS if p.name in allowed
-        ]
+        self._patterns = [p for p in _BUILTIN_PII_PATTERNS if p.name in allowed]
 
         if custom_patterns:
             self._patterns.extend(custom_patterns)
@@ -286,9 +280,7 @@ class PIIDetector:
             return text, []
 
         # Build placeholder lookup from patterns + overrides
-        placeholder_map: dict[str, str] = {
-            p.name: p.placeholder for p in self._patterns
-        }
+        placeholder_map: dict[str, str] = {p.name: p.placeholder for p in self._patterns}
         if placeholders:
             placeholder_map.update(placeholders)
 
@@ -319,9 +311,7 @@ class PIIDetector:
         sorted_matches = sorted(matches, key=lambda m: m.start, reverse=True)
         result = text
         for match in sorted_matches:
-            hash_val = hashlib.sha256(
-                (salt + match.matched_text).encode()
-            ).hexdigest()[:8]
+            hash_val = hashlib.sha256((salt + match.matched_text).encode()).hexdigest()[:8]
             replacement = f"[{match.entity_type.upper()}:{hash_val}]"
             result = result[: match.start] + replacement + result[match.end :]
 

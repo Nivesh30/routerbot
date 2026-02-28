@@ -21,7 +21,6 @@ from routerbot.core.scaling.models import (
 from routerbot.core.scaling.optimiser import CostOptimiser
 from routerbot.core.scaling.traffic import TrafficAnalyser
 
-
 # ── Model tests ──────────────────────────────────────────────────────
 
 
@@ -90,7 +89,7 @@ class TestModels:
         )
         assert rec.confidence == 1.0
 
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, Exception)):
             UsageRecommendation(
                 rec_type=RecommendationType.COST_SAVING,
                 title="T",
@@ -122,7 +121,7 @@ class TestModels:
         assert profile.quality_score == 0.7
 
     def test_model_cost_profile_quality_score_bounds(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, Exception)):
             ModelCostProfile(model="x", quality_score=1.1)
 
     def test_cost_threshold_defaults(self) -> None:
@@ -246,12 +245,8 @@ class TestTrafficAnalyser:
         new_ts = datetime.now(tz=UTC)
 
         # Inject snapshots directly
-        ta._snapshots["gpt-4"].append(
-            TrafficSnapshot(model="gpt-4", timestamp=old_ts, total_requests=1)
-        )
-        ta._snapshots["gpt-4"].append(
-            TrafficSnapshot(model="gpt-4", timestamp=new_ts, total_requests=2)
-        )
+        ta._snapshots["gpt-4"].append(TrafficSnapshot(model="gpt-4", timestamp=old_ts, total_requests=1))
+        ta._snapshots["gpt-4"].append(TrafficSnapshot(model="gpt-4", timestamp=new_ts, total_requests=2))
 
         recent = ta.get_snapshots("gpt-4", since=datetime.now(tz=UTC) - timedelta(hours=1))
         assert len(recent) == 1

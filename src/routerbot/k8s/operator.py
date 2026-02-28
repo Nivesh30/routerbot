@@ -200,8 +200,11 @@ class Operator:
         if model is None:
             return False
         self._emit(
-            kind="LLMModel", name=name, ns=namespace,
-            action="Deleted", message=f"Model {name} deleted",
+            kind="LLMModel",
+            name=name,
+            ns=namespace,
+            action="Deleted",
+            message=f"Model {name} deleted",
         )
         return True
 
@@ -280,8 +283,11 @@ class Operator:
         if k is None:
             return False
         self._emit(
-            kind="LLMKey", name=name, ns=namespace,
-            action="Deleted", message=f"Key {name} deleted",
+            kind="LLMKey",
+            name=name,
+            ns=namespace,
+            action="Deleted",
+            message=f"Key {name} deleted",
         )
         return True
 
@@ -338,10 +344,7 @@ class Operator:
         status.phase = ResourcePhase.RUNNING
 
         # Count active keys for this team
-        active_keys = sum(
-            1 for k in self._keys.values()
-            if k.spec.team_ref == team.metadata.name and k.status.active
-        )
+        active_keys = sum(1 for k in self._keys.values() if k.spec.team_ref == team.metadata.name and k.status.active)
         status.active_keys = active_keys
         status.conditions = [
             ResourceCondition(
@@ -360,8 +363,11 @@ class Operator:
         if team is None:
             return False
         self._emit(
-            kind="LLMTeam", name=name, ns=namespace,
-            action="Deleted", message=f"Team {name} deleted",
+            kind="LLMTeam",
+            name=name,
+            ns=namespace,
+            action="Deleted",
+            message=f"Team {name} deleted",
         )
         return True
 

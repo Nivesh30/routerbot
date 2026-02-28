@@ -153,11 +153,7 @@ class OpenTelemetryCallback(BaseCallback):
         tracer_name: str = "routerbot",
     ) -> None:
         self._provider = tracer_provider
-        self._tracer = (
-            tracer_provider.get_tracer(tracer_name)
-            if tracer_provider
-            else trace.get_tracer(tracer_name)
-        )
+        self._tracer = tracer_provider.get_tracer(tracer_name) if tracer_provider else trace.get_tracer(tracer_name)
         # Active spans keyed by request_id
         self._spans: dict[str, Span] = {}
 

@@ -54,11 +54,15 @@ class Bulkhead:
             self._waiting += 1
 
         try:
-            if self.config.max_wait_seconds <= 0 and self._semaphore.locked() and self._active >= self.config.max_concurrent:
-                    async with self._lock:
-                        self._waiting -= 1
-                        self._total_rejected += 1
-                    raise BulkheadFullError(self.provider)
+            if (
+                self.config.max_wait_seconds <= 0
+                and self._semaphore.locked()
+                and self._active >= self.config.max_concurrent
+            ):
+                async with self._lock:
+                    self._waiting -= 1
+                    self._total_rejected += 1
+                raise BulkheadFullError(self.provider)
             await asyncio.wait_for(
                 self._semaphore.acquire(),
                 timeout=self.config.max_wait_seconds if self.config.max_wait_seconds > 0 else None,

@@ -155,15 +155,17 @@ class TrafficAnalyser:
             if not snaps:
                 continue
             latest = snaps[-1]
-            summary.append({
-                "model": model,
-                "total_snapshots": len(snaps),
-                "latest_rpm": latest.requests_per_minute,
-                "latest_tpm": latest.tokens_per_minute,
-                "latest_latency_ms": latest.avg_latency_ms,
-                "latest_error_rate": latest.error_rate,
-                "total_cost_24h": self.get_total_cost(model, hours=24),
-            })
+            summary.append(
+                {
+                    "model": model,
+                    "total_snapshots": len(snaps),
+                    "latest_rpm": latest.requests_per_minute,
+                    "latest_tpm": latest.tokens_per_minute,
+                    "latest_latency_ms": latest.avg_latency_ms,
+                    "latest_error_rate": latest.error_rate,
+                    "total_cost_24h": self.get_total_cost(model, hours=24),
+                }
+            )
         return summary
 
     def clear(self, model: str | None = None) -> None:

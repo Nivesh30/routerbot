@@ -501,37 +501,27 @@ class TestResponseChecking:
 
     @pytest.mark.asyncio()
     async def test_response_redact(self, context: GuardrailContext) -> None:
-        guardrail = PIIDetectionGuardrail(
-            mode="redact", check_response_content=True
-        )
-        result = await guardrail.check_response(
-            "User email is john@example.com", context
-        )
+        guardrail = PIIDetectionGuardrail(mode="redact", check_response_content=True)
+        result = await guardrail.check_response("User email is john@example.com", context)
         assert result.action == GuardrailAction.MODIFY
         assert "[EMAIL]" in result.modified_content
 
     @pytest.mark.asyncio()
     async def test_response_block(self, context: GuardrailContext) -> None:
-        guardrail = PIIDetectionGuardrail(
-            mode="block", check_response_content=True
-        )
+        guardrail = PIIDetectionGuardrail(mode="block", check_response_content=True)
         result = await guardrail.check_response("john@example.com", context)
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
     async def test_response_hash(self, context: GuardrailContext) -> None:
-        guardrail = PIIDetectionGuardrail(
-            mode="hash", check_response_content=True, hash_salt="s"
-        )
+        guardrail = PIIDetectionGuardrail(mode="hash", check_response_content=True, hash_salt="s")
         result = await guardrail.check_response("john@example.com", context)
         assert result.action == GuardrailAction.MODIFY
         assert "[EMAIL:" in result.modified_content
 
     @pytest.mark.asyncio()
     async def test_response_no_pii(self, context: GuardrailContext) -> None:
-        guardrail = PIIDetectionGuardrail(
-            mode="redact", check_response_content=True
-        )
+        guardrail = PIIDetectionGuardrail(mode="redact", check_response_content=True)
         result = await guardrail.check_response("Normal response", context)
         assert result.action == GuardrailAction.ALLOW
 
@@ -549,9 +539,7 @@ class TestIntegrationWithManager:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
         manager = GuardrailManager()
-        manager.register(
-            PIIDetectionGuardrail(mode="redact", name="pii", priority=1)
-        )
+        manager.register(PIIDetectionGuardrail(mode="redact", name="pii", priority=1))
 
         messages = [{"role": "user", "content": "Email: john@example.com"}]
         result = await manager.run_request_guardrails(messages, context)
@@ -564,9 +552,7 @@ class TestIntegrationWithManager:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
         manager = GuardrailManager()
-        manager.register(
-            PIIDetectionGuardrail(mode="block", name="pii", priority=1)
-        )
+        manager.register(PIIDetectionGuardrail(mode="block", name="pii", priority=1))
 
         messages = [{"role": "user", "content": "john@example.com"}]
         result = await manager.run_request_guardrails(messages, context)

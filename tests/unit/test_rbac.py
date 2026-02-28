@@ -11,16 +11,16 @@ Covers:
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from routerbot.auth.rbac import (
+    ROLE_PERMISSIONS,
     AuthContext,
     Permission,
     Role,
-    ROLE_PERMISSIONS,
     require_admin,
     require_authenticated,
     require_owner_or_admin,
@@ -28,7 +28,6 @@ from routerbot.auth.rbac import (
     require_team_member_or_admin,
 )
 from routerbot.core.exceptions import AuthenticationError, PermissionDeniedError
-
 
 # ---------------------------------------------------------------------------
 # Role tests
@@ -290,11 +289,13 @@ class TestAuthMiddleware:
         from routerbot.auth.session import SessionConfig, SessionManager
 
         session_mgr = SessionManager(SessionConfig(secret_key="test"))
-        session_id, _ = session_mgr.create_session({
-            "email": "test@example.com",
-            "provider_user_id": "u-sso-1",
-            "role": "editor",
-        })
+        session_id, _ = session_mgr.create_session(
+            {
+                "email": "test@example.com",
+                "provider_user_id": "u-sso-1",
+                "role": "editor",
+            }
+        )
         rbac_app.state.routerbot.session_manager = session_mgr
 
         transport = ASGITransport(app=rbac_app)

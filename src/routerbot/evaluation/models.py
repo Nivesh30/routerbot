@@ -170,12 +170,8 @@ class RegressionConfig(BaseModel):
     """Configuration for regression detection."""
 
     enabled: bool = Field(default=True)
-    warning_threshold: float = Field(
-        default=0.05, ge=0, description="Score drop % to trigger warning"
-    )
-    critical_threshold: float = Field(
-        default=0.15, ge=0, description="Score drop % to trigger critical alert"
-    )
+    warning_threshold: float = Field(default=0.05, ge=0, description="Score drop % to trigger warning")
+    critical_threshold: float = Field(default=0.15, ge=0, description="Score drop % to trigger critical alert")
     min_samples: int = Field(default=10, ge=1, description="Min samples before alerting")
 
 

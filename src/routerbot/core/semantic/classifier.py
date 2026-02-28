@@ -89,9 +89,7 @@ class IntentClassifier:
 
         # Pre-compile keyword patterns
         for intent, patterns in self.KEYWORD_MAP.items():
-            self._compiled_patterns[intent] = [
-                re.compile(p, re.IGNORECASE | re.DOTALL) for p in patterns
-            ]
+            self._compiled_patterns[intent] = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in patterns]
 
     def classify_local(self, text: str) -> str | None:
         """Classify text using local keyword matching.
@@ -340,11 +338,7 @@ class SemanticRouter:
                     return content
                 # Handle multimodal content (list of parts)
                 if isinstance(content, list):
-                    text_parts = [
-                        p.get("text", "")
-                        for p in content
-                        if isinstance(p, dict) and p.get("type") == "text"
-                    ]
+                    text_parts = [p.get("text", "") for p in content if isinstance(p, dict) and p.get("type") == "text"]
                     return " ".join(text_parts) if text_parts else None
         return None
 

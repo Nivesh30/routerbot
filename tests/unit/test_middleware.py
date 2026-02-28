@@ -12,12 +12,10 @@ Covers:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import tempfile
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 - used in function signatures
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -32,7 +30,6 @@ from routerbot.core.config_models import (
 )
 from routerbot.proxy.app import create_app
 from routerbot.proxy.config_reload import ConfigWatcher, compute_config_hash
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -86,9 +83,7 @@ class TestRequestSizeLimit:
     async def test_large_body_rejected_via_content_length(self) -> None:
         config = _make_config(max_request_size_mb=0.001)  # ~1 KB limit
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             big_body = "x" * 5000  # > 1 KB
             resp = await ac.post(
                 "/v1/chat/completions",
@@ -102,9 +97,7 @@ class TestRequestSizeLimit:
     async def test_within_limit_passes(self) -> None:
         config = _make_config(max_request_size_mb=1.0, models=[("gpt-4o", "openai/gpt-4o")])
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             # Small request should pass size check (may fail at provider level, that's ok)
             resp = await ac.get("/health")
             assert resp.status_code == 200
@@ -151,9 +144,7 @@ class TestRobotsTxt:
     async def test_robots_blocked_when_enabled(self) -> None:
         config = _make_config(block_robots=True)
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/robots.txt")
             assert resp.status_code == 200
             assert "Disallow: /" in resp.text
@@ -173,9 +164,7 @@ class TestRobotsTxt:
 class TestConfigWatcher:
     async def test_start_and_stop(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            yaml.dump({"model_list": [], "general_settings": {"port": 4000}})
-        )
+        config_file.write_text(yaml.dump({"model_list": [], "general_settings": {"port": 4000}}))
         callback = AsyncMock()
         watcher = ConfigWatcher(config_path=config_file, on_reload=callback, poll_interval=0.1)
         await watcher.start()
@@ -185,18 +174,14 @@ class TestConfigWatcher:
 
     async def test_detects_file_change(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            yaml.dump({"model_list": [], "general_settings": {"port": 4000}})
-        )
+        config_file.write_text(yaml.dump({"model_list": [], "general_settings": {"port": 4000}}))
         callback = AsyncMock()
         watcher = ConfigWatcher(config_path=config_file, on_reload=callback, poll_interval=0.1)
         await watcher.start()
 
         # Modify the file
         await asyncio.sleep(0.05)
-        config_file.write_text(
-            yaml.dump({"model_list": [], "general_settings": {"port": 5000}})
-        )
+        config_file.write_text(yaml.dump({"model_list": [], "general_settings": {"port": 5000}}))
         # Wait for detection
         await asyncio.sleep(0.3)
 
@@ -205,9 +190,7 @@ class TestConfigWatcher:
 
     async def test_invalid_config_does_not_crash(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            yaml.dump({"model_list": [], "general_settings": {"port": 4000}})
-        )
+        config_file.write_text(yaml.dump({"model_list": [], "general_settings": {"port": 4000}}))
         callback = AsyncMock()
         watcher = ConfigWatcher(config_path=config_file, on_reload=callback, poll_interval=0.1)
         await watcher.start()
@@ -223,9 +206,7 @@ class TestConfigWatcher:
 
     async def test_reload_now(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            yaml.dump({"model_list": [], "general_settings": {"port": 4000}})
-        )
+        config_file.write_text(yaml.dump({"model_list": [], "general_settings": {"port": 4000}}))
         callback = AsyncMock()
         watcher = ConfigWatcher(config_path=config_file, on_reload=callback)
         result = await watcher.reload_now()
@@ -257,11 +238,7 @@ class TestComputeConfigHash:
 
     def test_different_config_different_hash(self) -> None:
         c1 = RouterBotConfig()
-        c2 = RouterBotConfig(
-            model_list=[
-                ModelEntry(model_name="x", provider_params=ModelParams(model="openai/x"))
-            ]
-        )
+        c2 = RouterBotConfig(model_list=[ModelEntry(model_name="x", provider_params=ModelParams(model="openai/x"))])
         assert compute_config_hash(c1) != compute_config_hash(c2)
 
     def test_hash_length(self) -> None:
@@ -288,9 +265,7 @@ class TestConfigRoutes:
         """When no master_key configured, anyone can trigger reload."""
         config = _make_config(models=[("gpt-4o", "openai/gpt-4o")])
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             # Will fail at file load (no config file on disk), which is expected.
             # We just verify the endpoint doesn't 401.
             resp = await ac.post("/config/reload")
@@ -303,9 +278,7 @@ class TestConfigRoutes:
             master_key="secret-admin-key",
         )
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.post(
                 "/config/reload",
                 headers={"x-master-key": "wrong-key"},
@@ -318,9 +291,7 @@ class TestConfigRoutes:
             master_key="secret-admin-key",
         )
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             # Will 500 because no config file exists, but auth should pass
             resp = await ac.post(
                 "/config/reload",
@@ -363,9 +334,7 @@ class TestOpenAPI:
         monkeypatch.setenv("ROUTERBOT_API_TITLE", "My Custom Gateway")
         config = _make_config()
         app = create_app(config=config)
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/openapi.json")
             schema = resp.json()
             assert schema["info"]["title"] == "My Custom Gateway"

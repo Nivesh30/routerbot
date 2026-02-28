@@ -46,9 +46,7 @@ class TokenExchanger:
     def __init__(self, config: TokenExchangeConfig | None = None, jwt_secret: str = "") -> None:
         self.config = config or TokenExchangeConfig()
         self._jwt_secret = jwt_secret
-        self._providers: dict[str, ExchangeProviderConfig] = {
-            p.name: p for p in self.config.providers
-        }
+        self._providers: dict[str, ExchangeProviderConfig] = {p.name: p for p in self.config.providers}
         self._client: httpx.AsyncClient | None = None
 
     async def setup(self) -> None:

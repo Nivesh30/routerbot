@@ -11,12 +11,7 @@ Covers:
 
 from __future__ import annotations
 
-import asyncio
-import logging
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from routerbot.observability.callbacks import (
     BaseCallback,
@@ -30,7 +25,6 @@ from routerbot.observability.callbacks import (
     SpendLogCallback,
     StreamEventData,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test callback implementations

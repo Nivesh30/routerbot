@@ -84,9 +84,7 @@ async def client(async_engine) -> AsyncClient:
 
     test_app.dependency_overrides[get_session] = _override_session
 
-    async with AsyncClient(
-        transport=ASGITransport(app=test_app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         yield ac
 
 
@@ -158,7 +156,7 @@ class TestDashboardStats:
         assert isinstance(data["active_models"], int)
         assert data["active_models"] >= 0
         assert isinstance(data["error_rate"], (int, float))
-        assert 0-0.001 <= data["error_rate"] <= 1.001
+        assert 0 - 0.001 <= data["error_rate"] <= 1.001
 
     @pytest.mark.anyio()
     async def test_stats_model_count_from_config(self, client: AsyncClient) -> None:
@@ -188,7 +186,9 @@ class TestDashboardStats:
     async def test_stats_period_1h(self, client: AsyncClient) -> None:
         """Stats endpoint accepts period=1h."""
         resp = await client.get(
-            "/dashboard/stats", params={"period": "1h"}, headers=_auth_headers(),
+            "/dashboard/stats",
+            params={"period": "1h"},
+            headers=_auth_headers(),
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -198,7 +198,9 @@ class TestDashboardStats:
     async def test_stats_period_7d(self, client: AsyncClient) -> None:
         """Stats endpoint accepts period=7d."""
         resp = await client.get(
-            "/dashboard/stats", params={"period": "7d"}, headers=_auth_headers(),
+            "/dashboard/stats",
+            params={"period": "7d"},
+            headers=_auth_headers(),
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -208,7 +210,9 @@ class TestDashboardStats:
     async def test_stats_period_30d(self, client: AsyncClient) -> None:
         """Stats endpoint accepts period=30d."""
         resp = await client.get(
-            "/dashboard/stats", params={"period": "30d"}, headers=_auth_headers(),
+            "/dashboard/stats",
+            params={"period": "30d"},
+            headers=_auth_headers(),
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -222,7 +226,8 @@ class TestDashboardStats:
 
     @pytest.mark.anyio()
     async def test_stats_top_models_includes_config_models(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Top models list should include models from config."""
         resp = await client.get("/dashboard/stats", headers=_auth_headers())

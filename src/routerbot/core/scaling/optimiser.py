@@ -122,9 +122,6 @@ class CostOptimiser:
         input_tokens = int(total_tokens * 0.7)
         output_tokens = total_tokens - input_tokens
 
-        alt_cost = (
-            input_tokens * alt_profile.input_cost_per_token
-            + output_tokens * alt_profile.output_cost_per_token
-        )
+        alt_cost = input_tokens * alt_profile.input_cost_per_token + output_tokens * alt_profile.output_cost_per_token
 
         return current_cost - alt_cost

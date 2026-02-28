@@ -150,18 +150,12 @@ class RegressionDetector:
     def stats(self) -> dict:
         """Return summary statistics."""
         total_observations = sum(
-            len(scores)
-            for model_metrics in self._history.values()
-            for scores in model_metrics.values()
+            len(scores) for model_metrics in self._history.values() for scores in model_metrics.values()
         )
         return {
             "models_tracked": len(self._history),
             "total_observations": total_observations,
             "total_alerts": len(self._alerts),
-            "critical_alerts": sum(
-                1 for a in self._alerts if a.severity == RegressionSeverity.CRITICAL
-            ),
-            "warning_alerts": sum(
-                1 for a in self._alerts if a.severity == RegressionSeverity.WARNING
-            ),
+            "critical_alerts": sum(1 for a in self._alerts if a.severity == RegressionSeverity.CRITICAL),
+            "warning_alerts": sum(1 for a in self._alerts if a.severity == RegressionSeverity.WARNING),
         }

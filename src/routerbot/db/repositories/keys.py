@@ -27,40 +27,21 @@ class KeyRepository(BaseRepository[VirtualKey]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_by_user(
-        self, user_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[VirtualKey]:
+    async def list_by_user(self, user_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[VirtualKey]:
         """Return keys belonging to a specific user."""
-        stmt = (
-            select(VirtualKey)
-            .where(VirtualKey.user_id == user_id)
-            .offset(offset)
-            .limit(limit)
-        )
+        stmt = select(VirtualKey).where(VirtualKey.user_id == user_id).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_by_team(
-        self, team_id: uuid.UUID, *, offset: int = 0, limit: int = 100
-    ) -> list[VirtualKey]:
+    async def list_by_team(self, team_id: uuid.UUID, *, offset: int = 0, limit: int = 100) -> list[VirtualKey]:
         """Return keys belonging to a specific team."""
-        stmt = (
-            select(VirtualKey)
-            .where(VirtualKey.team_id == team_id)
-            .offset(offset)
-            .limit(limit)
-        )
+        stmt = select(VirtualKey).where(VirtualKey.team_id == team_id).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def list_active(self, *, offset: int = 0, limit: int = 100) -> list[VirtualKey]:
         """Return only active (non-deactivated) keys."""
-        stmt = (
-            select(VirtualKey)
-            .where(VirtualKey.is_active.is_(True))
-            .offset(offset)
-            .limit(limit)
-        )
+        stmt = select(VirtualKey).where(VirtualKey.is_active.is_(True)).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

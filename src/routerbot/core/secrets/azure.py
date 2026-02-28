@@ -67,9 +67,7 @@ class AzureKeyVaultBackend(SecretBackend):
         """Get or create a SecretClient for the given vault."""
         vault_url = f"https://{vault_name}.vault.azure.net"
         if vault_url not in self._clients:
-            self._clients[vault_url] = SecretClient(
-                vault_url=vault_url, credential=self._credential
-            )
+            self._clients[vault_url] = SecretClient(vault_url=vault_url, credential=self._credential)
         return self._clients[vault_url]
 
     def get_secret(self, path: str) -> str:

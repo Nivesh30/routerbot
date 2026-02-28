@@ -425,7 +425,10 @@ class TestSemanticRouterABTests:
         router = _make_router(
             ab_tests=[
                 ABTestConfig(
-                    name="disabled", model_a="gpt-4o", model_b="claude-3-opus", enabled=False,
+                    name="disabled",
+                    model_a="gpt-4o",
+                    model_b="claude-3-opus",
+                    enabled=False,
                 ),
             ],
             default_model="fallback",
@@ -591,7 +594,10 @@ class TestSemanticRouterPipelineOrder:
         router = _make_router(
             ab_tests=[
                 ABTestConfig(
-                    name="t1", model_a="gpt-4o", model_b="alternate", traffic_split=0.0,
+                    name="t1",
+                    model_a="gpt-4o",
+                    model_b="alternate",
+                    traffic_split=0.0,
                 ),
             ],
             rules=[IntentRule(intent="code_generation", route_to="intent-model")],
@@ -626,7 +632,11 @@ class TestSemanticRouterABTestStats:
             ab_tests=[
                 ABTestConfig(name="t1", model_a="a", model_b="b", traffic_split=0.7),
                 ABTestConfig(
-                    name="t2", model_a="c", model_b="d", enabled=False, metadata={"owner": "team-x"},
+                    name="t2",
+                    model_a="c",
+                    model_b="d",
+                    enabled=False,
+                    metadata={"owner": "team-x"},
                 ),
             ],
         )

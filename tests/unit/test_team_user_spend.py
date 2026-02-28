@@ -7,12 +7,11 @@ requests, and injects a master-key-authenticated AuthContext.
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import StaticPool
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from routerbot.auth.rbac import AuthContext, Role
 from routerbot.db.models import Base
@@ -106,11 +105,14 @@ class TestTeamRoutes:
         create_resp = await client.post("/team/new", json={"name": "Old Name"})
         team_id = create_resp.json()["id"]
 
-        resp = await client.post("/team/update", json={
-            "team_id": team_id,
-            "name": "New Name",
-            "budget_limit": 500.0,
-        })
+        resp = await client.post(
+            "/team/update",
+            json={
+                "team_id": team_id,
+                "name": "New Name",
+                "budget_limit": 500.0,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["name"] == "New Name"
         assert resp.json()["budget_limit"] == 500.0
@@ -150,26 +152,35 @@ class TestTeamRoutes:
         user_id = user_resp.json()["id"]
 
         # Add member
-        add_resp = await client.post("/team/member/add", json={
-            "team_id": team_id,
-            "user_id": user_id,
-            "role": "member",
-        })
+        add_resp = await client.post(
+            "/team/member/add",
+            json={
+                "team_id": team_id,
+                "user_id": user_id,
+                "role": "member",
+            },
+        )
         assert add_resp.status_code == 201
         assert add_resp.json()["status"] == "added"
 
         # Duplicate add
-        dup_resp = await client.post("/team/member/add", json={
-            "team_id": team_id,
-            "user_id": user_id,
-        })
+        dup_resp = await client.post(
+            "/team/member/add",
+            json={
+                "team_id": team_id,
+                "user_id": user_id,
+            },
+        )
         assert dup_resp.status_code == 409
 
         # Remove member
-        rm_resp = await client.post("/team/member/remove", json={
-            "team_id": team_id,
-            "user_id": user_id,
-        })
+        rm_resp = await client.post(
+            "/team/member/remove",
+            json={
+                "team_id": team_id,
+                "user_id": user_id,
+            },
+        )
         assert rm_resp.status_code == 200
         assert rm_resp.json()["status"] == "removed"
 
@@ -178,10 +189,13 @@ class TestTeamRoutes:
         team_resp = await client.post("/team/new", json={"name": "NoMember Team"})
         team_id = team_resp.json()["id"]
 
-        resp = await client.post("/team/member/remove", json={
-            "team_id": team_id,
-            "user_id": str(uuid.uuid4()),
-        })
+        resp = await client.post(
+            "/team/member/remove",
+            json={
+                "team_id": team_id,
+                "user_id": str(uuid.uuid4()),
+            },
+        )
         assert resp.status_code == 404
 
 
@@ -210,11 +224,14 @@ class TestUserRoutes:
 
     @pytest.mark.asyncio
     async def test_create_user_with_role(self, client):
-        resp = await client.post("/user/new", json={
-            "email": "editor@test.com",
-            "role": "editor",
-            "max_budget": 100.0,
-        })
+        resp = await client.post(
+            "/user/new",
+            json={
+                "email": "editor@test.com",
+                "role": "editor",
+                "max_budget": 100.0,
+            },
+        )
         assert resp.status_code == 201
         assert resp.json()["role"] == "editor"
         assert resp.json()["max_budget"] == 100.0
@@ -232,21 +249,27 @@ class TestUserRoutes:
         create_resp = await client.post("/user/new", json={"email": "update@test.com"})
         user_id = create_resp.json()["id"]
 
-        resp = await client.post("/user/update", json={
-            "user_id": user_id,
-            "role": "editor",
-            "max_budget": 200.0,
-        })
+        resp = await client.post(
+            "/user/update",
+            json={
+                "user_id": user_id,
+                "role": "editor",
+                "max_budget": 200.0,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["role"] == "editor"
         assert resp.json()["max_budget"] == 200.0
 
     @pytest.mark.asyncio
     async def test_update_user_not_found(self, client):
-        resp = await client.post("/user/update", json={
-            "user_id": str(uuid.uuid4()),
-            "email": "x@x.com",
-        })
+        resp = await client.post(
+            "/user/update",
+            json={
+                "user_id": str(uuid.uuid4()),
+                "email": "x@x.com",
+            },
+        )
         assert resp.status_code == 404
 
     @pytest.mark.asyncio

@@ -198,10 +198,7 @@ class TestSecretDetectorScan:
         assert any(m.pattern_name == "database_url" for m in matches)
 
     def test_multiple_secrets(self, detector: SecretDetector) -> None:
-        text = (
-            "OpenAI: sk-abcdefghij1234567890abcdefghij\n"
-            "AWS: AKIAIOSFODNN7EXAMPLE"
-        )
+        text = "OpenAI: sk-abcdefghij1234567890abcdefghij\nAWS: AKIAIOSFODNN7EXAMPLE"
         matches = detector.scan(text)
         patterns_found = {m.pattern_name for m in matches}
         assert "openai_api_key" in patterns_found
@@ -229,10 +226,7 @@ class TestSecretDetectorRedact:
         assert len(matches) > 0
 
     def test_redact_multiple_secrets(self, detector: SecretDetector) -> None:
-        text = (
-            "Key1: sk-abcdefghij1234567890abcdefghij "
-            "Key2: AKIAIOSFODNN7EXAMPLE"
-        )
+        text = "Key1: sk-abcdefghij1234567890abcdefghij Key2: AKIAIOSFODNN7EXAMPLE"
         redacted, _matches = detector.redact(text)
         assert redacted.count("[REDACTED]") >= 2
         assert "sk-abcdefghij" not in redacted
@@ -373,9 +367,7 @@ class TestRedactMode:
         redact_guardrail: SecretDetectionGuardrail,
         context: GuardrailContext,
     ) -> None:
-        messages = [
-            {"role": "user", "content": "Use this key: sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "Use this key: sk-abcdefghij1234567890abcdefghij"}]
         result = await redact_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.MODIFY
         assert result.modified_content is not None
@@ -391,10 +383,7 @@ class TestRedactMode:
         messages = [
             {
                 "role": "user",
-                "content": (
-                    "Key: sk-abcdefghij1234567890abcdefghij "
-                    "AWS: AKIAIOSFODNN7EXAMPLE"
-                ),
+                "content": ("Key: sk-abcdefghij1234567890abcdefghij AWS: AKIAIOSFODNN7EXAMPLE"),
             }
         ]
         result = await redact_guardrail.check_request(messages, context)
@@ -449,9 +438,7 @@ class TestRedactMode:
         redact_guardrail: SecretDetectionGuardrail,
         context: GuardrailContext,
     ) -> None:
-        messages = [
-            {"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}]
         result = await redact_guardrail.check_request(messages, context)
         assert "1 secret" in (result.reason or "")
 
@@ -480,9 +467,7 @@ class TestBlockMode:
         block_guardrail: SecretDetectionGuardrail,
         context: GuardrailContext,
     ) -> None:
-        messages = [
-            {"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}]
         result = await block_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
         assert "openai_api_key" in (result.reason or "")
@@ -493,9 +478,7 @@ class TestBlockMode:
         block_guardrail: SecretDetectionGuardrail,
         context: GuardrailContext,
     ) -> None:
-        messages = [
-            {"role": "user", "content": "AKIAIOSFODNN7EXAMPLE"}
-        ]
+        messages = [{"role": "user", "content": "AKIAIOSFODNN7EXAMPLE"}]
         result = await block_guardrail.check_request(messages, context)
         assert result.action == GuardrailAction.BLOCK
         assert "aws_access_key" in (result.reason or "")
@@ -506,9 +489,7 @@ class TestBlockMode:
         block_guardrail: SecretDetectionGuardrail,
         context: GuardrailContext,
     ) -> None:
-        messages = [
-            {"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}]
         result = await block_guardrail.check_request(messages, context)
         assert "detected_patterns" in result.details
         assert result.details["match_count"] >= 1
@@ -528,38 +509,26 @@ class TestResponseChecking:
         context: GuardrailContext,
     ) -> None:
         guardrail = SecretDetectionGuardrail(mode="redact")
-        result = await guardrail.check_response(
-            "sk-abcdefghij1234567890abcdefghij", context
-        )
+        result = await guardrail.check_response("sk-abcdefghij1234567890abcdefghij", context)
         assert result.action == GuardrailAction.ALLOW
 
     @pytest.mark.asyncio()
     async def test_response_redact(self, context: GuardrailContext) -> None:
-        guardrail = SecretDetectionGuardrail(
-            mode="redact", check_response_content=True
-        )
-        result = await guardrail.check_response(
-            "Here is a key: sk-abcdefghij1234567890abcdefghij", context
-        )
+        guardrail = SecretDetectionGuardrail(mode="redact", check_response_content=True)
+        result = await guardrail.check_response("Here is a key: sk-abcdefghij1234567890abcdefghij", context)
         assert result.action == GuardrailAction.MODIFY
         assert "[REDACTED]" in result.modified_content
         assert "sk-abcdefghij" not in result.modified_content
 
     @pytest.mark.asyncio()
     async def test_response_block(self, context: GuardrailContext) -> None:
-        guardrail = SecretDetectionGuardrail(
-            mode="block", check_response_content=True
-        )
-        result = await guardrail.check_response(
-            "sk-abcdefghij1234567890abcdefghij", context
-        )
+        guardrail = SecretDetectionGuardrail(mode="block", check_response_content=True)
+        result = await guardrail.check_response("sk-abcdefghij1234567890abcdefghij", context)
         assert result.action == GuardrailAction.BLOCK
 
     @pytest.mark.asyncio()
     async def test_response_no_secrets_allow(self, context: GuardrailContext) -> None:
-        guardrail = SecretDetectionGuardrail(
-            mode="redact", check_response_content=True
-        )
+        guardrail = SecretDetectionGuardrail(mode="redact", check_response_content=True)
         result = await guardrail.check_response("Normal response text", context)
         assert result.action == GuardrailAction.ALLOW
 
@@ -577,13 +546,9 @@ class TestIntegrationWithManager:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
         manager = GuardrailManager()
-        manager.register(
-            SecretDetectionGuardrail(mode="redact", name="secrets", priority=1)
-        )
+        manager.register(SecretDetectionGuardrail(mode="redact", name="secrets", priority=1))
 
-        messages = [
-            {"role": "user", "content": "Key: sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "Key: sk-abcdefghij1234567890abcdefghij"}]
         result = await manager.run_request_guardrails(messages, context)
         assert result.modified
         assert result.modified_messages is not None
@@ -594,13 +559,9 @@ class TestIntegrationWithManager:
         from routerbot.proxy.guardrails.manager import GuardrailManager
 
         manager = GuardrailManager()
-        manager.register(
-            SecretDetectionGuardrail(mode="block", name="secrets", priority=1)
-        )
+        manager.register(SecretDetectionGuardrail(mode="block", name="secrets", priority=1))
 
-        messages = [
-            {"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}
-        ]
+        messages = [{"role": "user", "content": "sk-abcdefghij1234567890abcdefghij"}]
         result = await manager.run_request_guardrails(messages, context)
         assert result.blocked
 

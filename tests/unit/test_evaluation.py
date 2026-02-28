@@ -701,10 +701,13 @@ class TestBenchmark:
 
         bench = Benchmark()
         suite = bench.create_suite(name="dry")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="the cat sat on the mat"),
-            EvalSample(sample_id="s2", expected_output="hello world"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="the cat sat on the mat"),
+                EvalSample(sample_id="s2", expected_output="hello world"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["model_a"])
         assert run.status == EvalStatus.COMPLETED
         assert len(run.results) == 2
@@ -721,9 +724,12 @@ class TestBenchmark:
 
         bench = Benchmark(handler=handler)
         suite = bench.create_suite(name="test")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="the cat sat on the mat"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="the cat sat on the mat"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1"])
         assert run.status == EvalStatus.COMPLETED
         assert run.results[0].scores["bleu"] == pytest.approx(1.0)
@@ -738,9 +744,12 @@ class TestBenchmark:
 
         bench = Benchmark(handler=handler)
         suite = bench.create_suite(name="test")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1"])
         # Errors are captured per-sample, run still completes
         assert run.status == EvalStatus.COMPLETED
@@ -759,9 +768,12 @@ class TestBenchmark:
 
         bench = Benchmark()
         suite = bench.create_suite(name="test")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1"])
         assert bench.get_run(run.run_id) is run
         assert len(bench.list_runs()) == 1
@@ -774,9 +786,12 @@ class TestBenchmark:
 
         bench = Benchmark()
         suite = bench.create_suite(name="test")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello world"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello world"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1", "m2"])
         assert "m1" in run.summary
         assert "m2" in run.summary
@@ -792,9 +807,12 @@ class TestBenchmark:
 
         bench = Benchmark(cost_estimator=cost_est)
         suite = bench.create_suite(name="pareto")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello world"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello world"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["cheap", "expensive"])
         frontier = bench.pareto_frontier(run.run_id, quality_metric="bleu")
         assert len(frontier) == 2
@@ -819,9 +837,12 @@ class TestBenchmark:
 
         bench = Benchmark(cost_estimator=cost_est)
         suite = bench.create_suite(name="rec")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["cheap", "expensive"])
         recs = bench.recommend(run.run_id, budget=0.01)
         # Only cheap model is within budget
@@ -835,9 +856,12 @@ class TestBenchmark:
 
         bench = Benchmark()
         suite = bench.create_suite(name="rec")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1"])
         recs = bench.recommend(run.run_id, min_quality=0.5)
         # Dry-run → perfect score = 1.0 → should pass min_quality=0.5
@@ -858,10 +882,13 @@ class TestBenchmark:
 
         bench = Benchmark()
         suite = bench.create_suite(name="multi")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-            EvalSample(sample_id="s2", expected_output="world"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+                EvalSample(sample_id="s2", expected_output="world"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1", "m2", "m3"])
         # 3 models x 2 samples = 6 results
         assert len(run.results) == 6
@@ -875,9 +902,12 @@ class TestBenchmark:
 
         bench = Benchmark(cost_estimator=cost_est)
         suite = bench.create_suite(name="cost")
-        bench.add_samples(suite.suite_id, [
-            EvalSample(sample_id="s1", expected_output="hello"),
-        ])
+        bench.add_samples(
+            suite.suite_id,
+            [
+                EvalSample(sample_id="s1", expected_output="hello"),
+            ],
+        )
         run = await bench.run(suite.suite_id, ["m1"])
         assert run.results[0].cost == pytest.approx(0.05)
         assert run.summary["m1"]["total_cost"] == pytest.approx(0.05)

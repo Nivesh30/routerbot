@@ -23,22 +23,24 @@ from routerbot.auth.rbac import AuthContext, Role
 logger = logging.getLogger(__name__)
 
 # Paths that never require authentication
-_PUBLIC_PATHS: frozenset[str] = frozenset({
-    "/",
-    "/health",
-    "/health/liveness",
-    "/health/readiness",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/robots.txt",
-    "/sso/login",
-    "/sso/callback",
-    "/sso/providers",
-    "/sso/logout",
-    "/auth/login",
-    "/metrics",
-})
+_PUBLIC_PATHS: frozenset[str] = frozenset(
+    {
+        "/",
+        "/health",
+        "/health/liveness",
+        "/health/readiness",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/robots.txt",
+        "/sso/login",
+        "/sso/callback",
+        "/sso/providers",
+        "/sso/logout",
+        "/auth/login",
+        "/metrics",
+    }
+)
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

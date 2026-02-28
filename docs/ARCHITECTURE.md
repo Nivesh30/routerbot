@@ -182,7 +182,119 @@ React + TypeScript SPA for managing the proxy.
 - **Logs**: Request/response audit logs
 - **Router**: Fallback/retry configuration
 
-### 6. Infrastructure Layer
+### 6. Stage 8 — Advanced Platform Features
+
+Stage 8 adds enterprise-grade capabilities that extend RouterBot from a basic LLM gateway into a comprehensive AI infrastructure platform.
+
+#### 6.1 MCP Gateway (`core/mcp/`)
+Model Context Protocol integration — connect external MCP servers and expose their tools to any LLM via function calling.
+- **client.py** — MCP client implementation
+- **registry.py** — MCP server registry with health checking
+- **models.py** — Data models for MCP tools, servers, and results
+- Routes: `POST /v1/mcp/tools`, `POST /v1/mcp/call`
+
+#### 6.2 A2A Gateway (`core/a2a/`)
+Agent-to-Agent protocol for agent registration, discovery, and inter-agent communication.
+- **client.py** — A2A client for agent invocation routing
+- **registry.py** — Agent registry with discovery and health monitoring
+- **models.py** — Agent card format, task models
+- Routes: `GET /v1/a2a/agents`, `POST /v1/a2a/invoke`
+
+#### 6.3 Semantic Routing (`core/semantic/`)
+Content-aware routing that directs requests to the optimal model based on intent classification.
+- **classifier.py** — LLM-based intent classification (simple → cheap model, code → code model, complex → powerful model)
+- **models.py** — Routing rules, classification results, A/B test configuration
+
+#### 6.4 Request Transformation Pipeline (`core/transform/`)
+Pluggable request/response transformation before and after LLM calls.
+- **pipeline.py** — Transformation pipeline orchestrator
+- **prompt_injector.py** — System prompt injection per-team/per-key
+- **enricher.py** — Request enrichment from external context
+- **postprocessor.py** — Response post-processing hooks
+- **models.py** — Transformation rule definitions
+
+#### 6.5 Auto-Scaling Intelligence (`core/scaling/`)
+Traffic analysis and cost optimization recommendations.
+- **engine.py** — Scaling recommendation engine
+- **traffic.py** — Traffic pattern analysis
+- **optimiser.py** — Cost optimization suggestions
+- **alerts.py** — Automated cost alerts
+- **models.py** — Scaling metrics and recommendation models
+
+#### 6.6 Plugin System (`core/plugins/`)
+Extensible plugin architecture for third-party integrations.
+- **manager.py** — Plugin lifecycle management (load, init, shutdown)
+- **registry.py** — Plugin discovery via Python entry points
+- **hooks.py** — Hook system for provider, guardrail, callback, auth, and middleware plugins
+- **models.py** — Plugin interface definitions
+- **examples/** — Reference plugins: Datadog, Splunk, Slack, PagerDuty
+
+#### 6.7 Connection Resilience (`core/resilience/`)
+Production-grade resilience patterns beyond basic retry/fallback.
+- **circuit_breaker.py** — Circuit breaker pattern with half-open recovery
+- **request_queue.py** — Request queuing during provider outages
+- **degradation.py** — Graceful degradation modes
+- **bulkhead.py** — Bulkhead pattern for provider isolation
+- **region.py** — Region-aware routing for multi-region deployments
+- **models.py** — Resilience state models
+
+#### 6.8 Secret Manager Integration (`core/secrets/`)
+Secure provider API key storage via external secret managers.
+- **aws.py** — AWS Secrets Manager
+- **gcp.py** — Google Secret Manager
+- **azure.py** — Azure Key Vault
+- **vault.py** — HashiCorp Vault
+- **base.py** — Abstract secret manager interface
+- Config syntax: `aws_secret/key-name`, `gcp_secret/key-name`, `vault/path/to/secret`
+
+#### 6.9 Advanced Auth (`auth/advanced/`)
+Enterprise authentication extensions.
+- **mtls.py** — Mutual TLS authentication
+- **key_scoping.py** — Per-endpoint API key scoping
+- **webhook_auth.py** — Webhook-based custom authentication
+- **token_exchange.py** — External token → RouterBot token exchange
+- **permissions.py** — Fine-grained custom permission sets
+- **models.py** — Auth extension models
+
+#### 6.10 Batch Processing (`core/batch/`)
+Full OpenAI Batch API compatibility with background worker pool.
+- **batch_manager.py** — Batch job lifecycle (create, status, cancel, results)
+- **worker_pool.py** — Background worker pool for async processing
+- **job_queue.py** — Priority queue system (high/medium/low)
+- **models.py** — Batch job and result models
+- Routes: `POST /v1/batches`, `GET /v1/batches/{id}`, `POST /v1/batches/{id}/cancel`
+
+#### 6.11 AI Hub & Playground (`hub/`)
+Public-facing model catalog and interactive testing interface.
+- **model_hub.py** — Model registry with pricing and capability metadata
+- **playground.py** — Interactive multi-model comparison playground
+- **prompt_manager.py** — Prompt template library with versioning and A/B testing
+- **models.py** — Hub data models
+
+#### 6.12 Evaluation & Quality (`evaluation/`)
+Response quality evaluation and regression detection.
+- **metrics.py** — Built-in metrics (BLEU, ROUGE, cosine similarity, exact match)
+- **llm_judge.py** — LLM-as-judge evaluation with custom criteria
+- **regression.py** — Quality regression detection and alerting
+- **benchmark.py** — Automated model benchmarking and Pareto analysis
+- **models.py** — Evaluation result models
+
+#### 6.13 Kubernetes Operator (`k8s/`)
+Custom Kubernetes operator for declarative RouterBot management.
+- **operator.py** — Operator reconciliation loop
+- **crd_schemas.py** — CRDs: `LLMGateway`, `LLMModel`, `LLMKey`, `LLMTeam`
+- **autoscaler.py** — Auto-scaling based on request metrics
+- **health_manager.py** — Health-based pod management
+- **models.py** — Kubernetes resource models
+
+#### 6.14 Extended Observability
+- **observability/exporters/** — Log export backends: S3, GCS, Azure Blob, Local filesystem
+- **observability/webhooks.py** — Webhook notifications for events
+- **observability/team_logging.py** — Per-team log routing
+
+---
+
+### 7. Infrastructure Layer
 
 **PostgreSQL** — Primary data store for:
 - Virtual keys, teams, users
@@ -427,22 +539,70 @@ routerbot/
 │       ├── py.typed
 │       ├── core/
 │       │   ├── __init__.py
-│       │   ├── completion.py      # Main completion interface
-│       │   ├── streaming.py       # Streaming handler
-│       │   ├── embeddings.py      # Embeddings interface
-│       │   ├── images.py          # Image generation
-│       │   ├── audio.py           # Audio endpoints
-│       │   ├── rerank.py          # Reranking
-│       │   ├── batches.py         # Batch processing
-│       │   ├── exceptions.py      # Exception hierarchy
-│       │   ├── types.py           # Pydantic models (request/response)
-│       │   ├── cost.py            # Cost calculation
-│       │   ├── tokens.py          # Token counting
-│       │   └── config.py          # Config loading
+│       │   ├── config.py            # Config loading
+│       │   ├── config_models.py     # Pydantic config models
+│       │   ├── cost.py              # Cost calculation
+│       │   ├── enums.py             # Shared enumerations
+│       │   ├── exceptions.py        # Exception hierarchy
+│       │   ├── logging.py           # Logging utilities
+│       │   ├── model_registry.py    # Model metadata & pricing
+│       │   ├── tokens.py            # Token counting
+│       │   ├── types.py             # Pydantic models (request/response)
+│       │   ├── a2a/                 # A2A agent gateway
+│       │   │   ├── client.py
+│       │   │   ├── models.py
+│       │   │   └── registry.py
+│       │   ├── batch/               # Batch processing
+│       │   │   ├── batch_manager.py
+│       │   │   ├── job_queue.py
+│       │   │   ├── models.py
+│       │   │   └── worker_pool.py
+│       │   ├── mcp/                 # MCP gateway
+│       │   │   ├── client.py
+│       │   │   ├── models.py
+│       │   │   └── registry.py
+│       │   ├── plugins/             # Plugin system
+│       │   │   ├── hooks.py
+│       │   │   ├── manager.py
+│       │   │   ├── models.py
+│       │   │   ├── registry.py
+│       │   │   └── examples/
+│       │   │       ├── datadog_plugin.py
+│       │   │       ├── pagerduty_plugin.py
+│       │   │       ├── slack_plugin.py
+│       │   │       └── splunk_plugin.py
+│       │   ├── resilience/          # Connection resilience
+│       │   │   ├── bulkhead.py
+│       │   │   ├── circuit_breaker.py
+│       │   │   ├── degradation.py
+│       │   │   ├── models.py
+│       │   │   ├── region.py
+│       │   │   └── request_queue.py
+│       │   ├── scaling/             # Auto-scaling intelligence
+│       │   │   ├── alerts.py
+│       │   │   ├── engine.py
+│       │   │   ├── models.py
+│       │   │   ├── optimiser.py
+│       │   │   └── traffic.py
+│       │   ├── secrets/             # Secret manager integrations
+│       │   │   ├── aws.py
+│       │   │   ├── azure.py
+│       │   │   ├── base.py
+│       │   │   ├── gcp.py
+│       │   │   └── vault.py
+│       │   ├── semantic/            # Semantic routing
+│       │   │   ├── classifier.py
+│       │   │   └── models.py
+│       │   └── transform/           # Request transformation
+│       │       ├── enricher.py
+│       │       ├── models.py
+│       │       ├── pipeline.py
+│       │       ├── postprocessor.py
+│       │       └── prompt_injector.py
 │       ├── providers/
 │       │   ├── __init__.py
-│       │   ├── base.py            # Abstract provider base
-│       │   ├── registry.py        # Provider registration
+│       │   ├── base.py              # Abstract provider base
+│       │   ├── registry.py          # Provider registration
 │       │   ├── openai/
 │       │   ├── anthropic/
 │       │   ├── azure/
@@ -454,81 +614,115 @@ routerbot/
 │       │   ├── mistral/
 │       │   ├── cohere/
 │       │   ├── deepseek/
-│       │   └── openai_compatible/  # Generic OpenAI-compat adapter
+│       │   └── openai_compatible/   # Generic OpenAI-compat adapter
 │       ├── router/
 │       │   ├── __init__.py
-│       │   ├── router.py          # Main router
-│       │   ├── strategies.py      # Load balancing strategies
-│       │   ├── retry.py           # Retry logic
-│       │   ├── fallback.py        # Fallback chains
-│       │   ├── health.py          # Health checking
-│       │   └── cooldown.py        # Cooldown management
+│       │   ├── router.py            # Main router
+│       │   ├── strategies.py        # Load balancing strategies
+│       │   ├── retry.py             # Retry logic
+│       │   ├── fallback.py          # Fallback chains
+│       │   ├── health.py            # Health checking
+│       │   └── cooldown.py          # Cooldown management
 │       ├── proxy/
 │       │   ├── __init__.py
-│       │   ├── app.py             # FastAPI app factory
-│       │   ├── cli.py             # CLI entry point
-│       │   ├── config.py          # Proxy config
+│       │   ├── app.py               # FastAPI app factory
+│       │   ├── config.py            # Proxy config
 │       │   ├── middleware/
-│       │   │   ├── auth.py        # Authentication
-│       │   │   ├── rate_limit.py  # Rate limiting
-│       │   │   ├── ip_filter.py   # IP allowlist/blocklist
-│       │   │   ├── size_limit.py  # Request/response size limits
-│       │   │   └── logging.py     # Request logging
+│       │   │   ├── auth.py          # Authentication
+│       │   │   ├── rate_limit.py    # Rate limiting
+│       │   │   ├── ip_filter.py     # IP allowlist/blocklist
+│       │   │   └── size_limit.py    # Request/response size limits
 │       │   ├── routes/
-│       │   │   ├── completions.py
-│       │   │   ├── embeddings.py
-│       │   │   ├── images.py
+│       │   │   ├── a2a.py           # A2A gateway endpoints
 │       │   │   ├── audio.py
-│       │   │   ├── models.py
-│       │   │   ├── keys.py
-│       │   │   ├── teams.py
-│       │   │   ├── users.py
-│       │   │   ├── spend.py
+│       │   │   ├── audit.py         # Audit log endpoints
+│       │   │   ├── auth.py          # Auth management
+│       │   │   ├── batches.py       # Batch API
+│       │   │   ├── completions.py
+│       │   │   ├── config.py
+│       │   │   ├── dashboard.py     # Dashboard stats API
+│       │   │   ├── embeddings.py
 │       │   │   ├── health.py
-│       │   │   └── config.py
+│       │   │   ├── images.py
+│       │   │   ├── keys.py
+│       │   │   ├── mcp.py           # MCP gateway endpoints
+│       │   │   ├── metrics.py       # Prometheus metrics
+│       │   │   ├── models.py
+│       │   │   ├── model_management.py
+│       │   │   ├── rerank.py
+│       │   │   ├── spend.py
+│       │   │   ├── sso.py           # SSO endpoints
+│       │   │   ├── teams.py
+│       │   │   └── users.py
 │       │   └── guardrails/
-│       │       ├── __init__.py
 │       │       ├── base.py
+│       │       ├── manager.py
 │       │       ├── pii_detection.py
 │       │       ├── content_moderation.py
 │       │       ├── banned_keywords.py
-│       │       ├── secret_detection.py
-│       │       └── custom.py
+│       │       └── secret_detection.py
 │       ├── auth/
 │       │   ├── __init__.py
-│       │   ├── api_key.py         # API key auth
-│       │   ├── jwt.py             # JWT auth
-│       │   ├── sso.py             # SSO (OIDC/SAML)
-│       │   ├── rbac.py            # Role-based access control
-│       │   └── session.py         # Session management
+│       │   ├── api_key.py           # API key auth
+│       │   ├── audit.py             # Audit logging
+│       │   ├── jwt.py               # JWT auth
+│       │   ├── sso.py               # SSO (OIDC/SAML)
+│       │   ├── rbac.py              # Role-based access control
+│       │   ├── session.py           # Session management
+│       │   └── advanced/            # Advanced auth extensions
+│       │       ├── key_scoping.py
+│       │       ├── models.py
+│       │       ├── mtls.py
+│       │       ├── permissions.py
+│       │       ├── token_exchange.py
+│       │       └── webhook_auth.py
 │       ├── db/
 │       │   ├── __init__.py
-│       │   ├── engine.py          # SQLAlchemy engine
-│       │   ├── models.py          # ORM models
-│       │   ├── repositories/      # Data access layer
-│       │   │   ├── keys.py
-│       │   │   ├── teams.py
-│       │   │   ├── users.py
-│       │   │   ├── spend.py
-│       │   │   └── audit.py
-│       │   └── migrations/        # Alembic migrations
+│       │   ├── engine.py            # SQLAlchemy engine
+│       │   ├── models.py            # ORM models
+│       │   └── repositories/        # Data access layer
 │       ├── cache/
 │       │   ├── __init__.py
-│       │   ├── redis.py           # Redis cache backend
-│       │   ├── memory.py          # In-memory cache
-│       │   └── base.py            # Cache interface
+│       │   ├── base.py              # Cache interface
+│       │   ├── manager.py           # Cache manager
+│       │   ├── memory.py            # In-memory LRU cache
+│       │   └── redis.py             # Redis cache backend
 │       ├── observability/
 │       │   ├── __init__.py
-│       │   ├── callbacks.py       # Callback system
-│       │   ├── prometheus.py      # Prometheus metrics
-│       │   ├── langfuse.py        # Langfuse integration
-│       │   ├── opentelemetry.py   # OpenTelemetry
-│       │   └── exporters/         # Log exporters (GCS, S3, etc.)
+│       │   ├── callbacks.py         # Callback system
+│       │   ├── prometheus.py        # Prometheus metrics
+│       │   ├── langfuse.py          # Langfuse integration
+│       │   ├── opentelemetry.py     # OpenTelemetry
+│       │   ├── team_logging.py      # Per-team log routing
+│       │   ├── webhooks.py          # Webhook notifications
+│       │   └── exporters/           # Log export backends
+│       │       ├── base.py
+│       │       ├── export_callback.py
+│       │       ├── s3.py
+│       │       ├── gcs.py
+│       │       ├── azure_blob.py
+│       │       └── local.py
+│       ├── evaluation/              # Quality evaluation
+│       │   ├── benchmark.py
+│       │   ├── llm_judge.py
+│       │   ├── metrics.py
+│       │   ├── models.py
+│       │   └── regression.py
+│       ├── hub/                     # AI Hub & Playground
+│       │   ├── model_hub.py
+│       │   ├── models.py
+│       │   ├── playground.py
+│       │   └── prompt_manager.py
+│       ├── k8s/                     # Kubernetes operator
+│       │   ├── autoscaler.py
+│       │   ├── crd_schemas.py
+│       │   ├── health_manager.py
+│       │   ├── models.py
+│       │   └── operator.py
 │       └── utils/
 │           ├── __init__.py
-│           ├── hashing.py         # Key hashing
-│           ├── encoding.py        # Token encoding
-│           └── secrets.py         # Secret manager integrations
+│           ├── hashing.py           # Key hashing
+│           └── encoding.py          # Token encoding
 ├── ui/
 │   └── dashboard/
 │       ├── package.json
