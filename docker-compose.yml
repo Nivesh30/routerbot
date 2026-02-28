@@ -1,0 +1,184 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# RouterBot — Docker Compose
+# ──────────────────────────────────────────────────────────────────────────────
+# Usage:
+#   docker compose up -d                          # core services only
+#   docker compose --profile monitoring up -d     # + Prometheus & Grafana
+#   docker compose logs -f routerbot              # follow app logs
+#   docker compose down -v                        # stop + remove volumes
+#
+# Environment:
+#   Copy .env.example → .env and fill in API keys before starting.
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── RouterBot API + Dashboard ────────────────────────────────────────────
+  routerbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: routerbot:${ROUTERBOT_VERSION:-latest}
+    container_name: routerbot
+    restart: unless-stopped
+    ports:
+      - "${ROUTERBOT_PORT:-8000}:8000"
+    volumes:
+      - ./routerbot_config.yaml:/config/routerbot_config.yaml:ro
+    environment:
+      - ROUTERBOT_CONFIG=/config/routerbot_config.yaml
+      - ROUTERBOT_DASHBOARD_DIST=/app/ui/dashboard/dist
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-routerbot}:${POSTGRES_PASSWORD:-routerbot}@postgres:5432/${POSTGRES_DB:-routerbot}
+      - REDIS_URL=redis://redis:6379/0
+      # LLM Provider API Keys (set in .env)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - routerbot-net
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: routerbot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-routerbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-routerbot}
+      POSTGRES_DB: ${POSTGRES_DB:-routerbot}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-routerbot}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 128m
+    networks:
+      - routerbot-net
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: routerbot-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 300M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - routerbot-net
+
+  # ── Prometheus (monitoring profile) ──────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: routerbot-prometheus
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - routerbot-net
+
+  # ── Grafana (monitoring profile) ─────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: routerbot-grafana
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    volumes:
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=routerbot
+      - GF_USERS_ALLOW_SIGN_UP=false
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    networks:
+      - routerbot-net
+
+volumes:
+  pgdata:
+  redisdata:
+  promdata:
+  grafanadata:
+
+networks:
+  routerbot-net:
+    driver: bridge

@@ -29,6 +29,7 @@ ui/dashboard/.vite/
 docs/
 tests/
 *.md
+!README.md
 Makefile
 
 # ─── Secrets & local config ───────────────────────────────────────────────────

@@ -32,23 +32,29 @@ RUN apt-get update \
 WORKDIR /app
 
 # Install uv for fast dependency installation
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+RUN pip install --no-cache-dir uv
 
-# Install Python dependencies (layer-cached unless pyproject.toml changes)
-COPY pyproject.toml ./
-RUN uv pip install --system --no-cache ".[all]" \
-    # Install uvicorn + gunicorn for production serving
-    && uv pip install --system --no-cache "uvicorn[standard]" "sqlalchemy[asyncio]" aiosqlite
-
-# Copy application source
+# Copy build metadata and full application source
+COPY pyproject.toml README.md ./
 COPY src/ ./src/
+
+# Install Python dependencies (proxy extra includes uvicorn, sqlalchemy, aiosqlite)
+RUN uv pip install --system --no-cache ".[proxy]"
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/ui/dashboard/dist ./ui/dashboard/dist
 
+# Create non-root user for runtime
+RUN groupadd --gid 1000 routerbot \
+    && useradd --uid 1000 --gid routerbot --shell /bin/sh --create-home routerbot \
+    && chown -R routerbot:routerbot /app
+
+USER routerbot
+
 # Runtime configuration
 ENV PYTHONUNBUFFERED=1
 ENV ROUTERBOT_CONFIG=/config/routerbot_config.yaml
+ENV ROUTERBOT_DASHBOARD_DIST=/app/ui/dashboard/dist
 
 # Expose the API port
 EXPOSE 8000

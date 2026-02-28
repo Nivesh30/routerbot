@@ -40,29 +40,32 @@ Complete guide for running RouterBot in containers: local development, staging, 
 
 ```bash
 # Clone and configure
-git clone https://github.com/your-org/routerbot.git
+git clone https://github.com/Nivesh30/routerbot.git
 cd routerbot
 cp .env.example .env
 # Edit .env with your provider API keys
 
-# Start all services
+# Start core services (routerbot + postgres + redis)
 docker compose up -d
+
+# Start with monitoring (adds Prometheus + Grafana)
+docker compose --profile monitoring up -d
 
 # Verify everything is healthy
 docker compose ps
-curl http://localhost:4000/health
+curl http://localhost:8000/health
 ```
 
 ### Services Started
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `routerbot` | `4000` | Proxy API server |
-| `postgres` | `5432` | PostgreSQL database |
-| `redis` | `6379` | Redis cache |
-| `dashboard` | `4000/dashboard` | Admin UI (served by proxy) |
-| `prometheus` | `9090` | Metrics scraping |
-| `grafana` | `3000` | Dashboards (admin/admin) |
+| Service | Port | Profile | Description |
+|---------|------|---------|-------------|
+| `routerbot` | `8000` | default | Proxy API server |
+| `postgres` | `5432` | default | PostgreSQL database |
+| `redis` | `6379` | default | Redis cache |
+| `dashboard` | `8000/ui/` | default | Admin UI (served by proxy) |
+| `prometheus` | `9090` | monitoring | Metrics scraping |
+| `grafana` | `3000` | monitoring | Dashboards (admin/routerbot) |
 
 ### `docker-compose.yml` (Development)
 
