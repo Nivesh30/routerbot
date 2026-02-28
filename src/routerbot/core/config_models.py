@@ -189,5 +189,9 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Resilience, circuit-breaker, bulkhead, and region-routing configuration",
     )
+    advanced_auth: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Advanced auth: mTLS, key scoping, webhook auth, token exchange, permissions",
+    )
 
     model_config = {"extra": "allow"}
