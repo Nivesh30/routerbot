@@ -387,10 +387,11 @@ export function Keys() {
       <div className="grid grid-cols-2 gap-4">
         {/* User dropdown */}
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+          <label htmlFor="key-user-id" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
             User ID
           </label>
           <select
+            id="key-user-id"
             value={form.user_id}
             onChange={(e) => updateField("user_id", e.target.value)}
             className={selectCls}
@@ -405,10 +406,11 @@ export function Keys() {
         </div>
         {/* Team dropdown */}
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+          <label htmlFor="key-team-id" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
             Team ID
           </label>
           <select
+            id="key-team-id"
             value={form.team_id}
             onChange={(e) => updateField("team_id", e.target.value)}
             className={selectCls}
@@ -424,7 +426,7 @@ export function Keys() {
       </div>
       {/* Models multi-select (checkboxes) */}
       <div className="space-y-1">
-        <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+        <label htmlFor="key-allowed-models" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
           Allowed Models
         </label>
         {models.length > 0 ? (
@@ -466,6 +468,7 @@ export function Keys() {
           </div>
         ) : (
           <Input
+            id="key-allowed-models"
             placeholder="e.g. gpt-4o, claude-sonnet-4-20250514 (comma-separated, empty = all)"
             value={form.models}
             onChange={(e) => updateField("models", e.target.value)}

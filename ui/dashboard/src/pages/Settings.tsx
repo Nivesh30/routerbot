@@ -1,5 +1,5 @@
 import { Key, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Badge } from "../components/common/Badge";
 import { Button } from "../components/common/Button";
@@ -203,9 +203,12 @@ function ConfigSection() {
     });
   }, []);
 
-  useEffect(() => {
-    if (data) syncFromData(data);
-  }, [data, syncFromData]);
+  // Adjust state during render when server data changes (React recommended pattern)
+  const [prevData, setPrevData] = useState(data);
+  if (data && data !== prevData) {
+    setPrevData(data);
+    syncFromData(data);
+  }
 
   if (isLoading) return <LoadingSpinner />;
   if (error)

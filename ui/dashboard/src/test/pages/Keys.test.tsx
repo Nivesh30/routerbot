@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,6 +21,24 @@ vi.mock("../../api/hooks/useKeys", () => ({
   useUpdateKey: vi.fn(),
   useDeleteKey: vi.fn(),
   useRotateKey: vi.fn(),
+}));
+
+vi.mock("../../api/hooks/useModels", () => ({
+  useModels: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
+vi.mock("../../api/hooks/useTeams", () => ({
+  useTeams: vi.fn(() => ({
+    data: [{ id: "team-uuid-1", team_alias: "Team 1" }],
+    isLoading: false,
+  })),
+}));
+
+vi.mock("../../api/hooks/useUsers", () => ({
+  useUsers: vi.fn(() => ({
+    data: [{ id: "user-uuid-1", email: "user@example.com" }],
+    isLoading: false,
+  })),
 }));
 
 import {
@@ -131,7 +150,6 @@ function makeMutation(mutateAsync = vi.fn()) {
 beforeEach(() => {
   vi.clearAllMocks();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mockUseKeys.mockReturnValue({
     data: MOCK_KEYS,
     isLoading: false,
@@ -276,9 +294,12 @@ describe("Keys page", () => {
     const editButtons = screen.getAllByTitle("Edit");
     fireEvent.click(editButtons[0]);
     expect(screen.getByText("Edit Key Settings")).toBeInTheDocument();
-    // Should pre-populate the form
-    expect(screen.getByDisplayValue("user-uuid-1")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("team-uuid-1")).toBeInTheDocument();
+    // User/Team dropdowns should be pre-populated via select value
+    const userSelect = screen.getByLabelText("User ID") as HTMLSelectElement;
+    expect(userSelect.value).toBe("user-uuid-1");
+    const teamSelect = screen.getByLabelText("Team ID") as HTMLSelectElement;
+    expect(teamSelect.value).toBe("team-uuid-1");
+    // Models text input (models mock returns empty, so fallback input renders)
     expect(screen.getByDisplayValue("gpt-4o, claude-sonnet-4-20250514")).toBeInTheDocument();
     // Budget and RPM may both be 100 — just check they exist
     const vals = screen.getAllByDisplayValue("100");

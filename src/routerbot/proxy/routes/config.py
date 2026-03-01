@@ -219,8 +219,8 @@ async def update_config(body: ConfigUpdateRequest, request: Request) -> JSONResp
     _check_master_key(request, state)
 
     import os
-    from pathlib import Path
 
+    import anyio
     import yaml
 
     cfg = state.config
@@ -243,12 +243,12 @@ async def update_config(body: ConfigUpdateRequest, request: Request) -> JSONResp
             setattr(cfg.routerbot_settings.cache_params, field, value)
 
     # Persist to YAML file
-    config_path = Path(os.environ.get("ROUTERBOT_CONFIG", "routerbot_config.yaml"))
+    config_path = anyio.Path(os.environ.get("ROUTERBOT_CONFIG", "routerbot_config.yaml"))
     try:
         # Read existing YAML to preserve structure (comments are lost by re-serialization)
-        raw: dict = {}
-        if config_path.exists():
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+        raw: dict[str, object] = {}
+        if await config_path.exists():
+            raw = yaml.safe_load(await config_path.read_text(encoding="utf-8")) or {}
 
         if body.general_settings:
             gs = raw.setdefault("general_settings", {})
@@ -267,7 +267,7 @@ async def update_config(body: ConfigUpdateRequest, request: Request) -> JSONResp
                 cp = rbs.setdefault("cache_params", {})
                 cp.update(cache_data)
 
-        config_path.write_text(yaml.safe_dump(raw, default_flow_style=False, sort_keys=False), encoding="utf-8")
+        await config_path.write_text(yaml.safe_dump(raw, default_flow_style=False, sort_keys=False), encoding="utf-8")
         logger.info("Config persisted to %s", config_path)
     except Exception as exc:
         logger.error("Failed to persist config: %s", exc)
