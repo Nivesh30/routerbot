@@ -11,6 +11,7 @@ Endpoints:
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -197,9 +198,8 @@ def _check_master_key(request: Request, state: object) -> None:
     if config and config.general_settings:
         master_key = config.general_settings.master_key
     if master_key:
-        provided = (
-            request.headers.get("x-master-key")
-            or request.headers.get("authorization", "").removeprefix("Bearer ")
+        provided = request.headers.get("x-master-key") or request.headers.get("authorization", "").removeprefix(
+            "Bearer "
         )
         if not provided or provided != master_key:
             raise HTTPException(status_code=401, detail="Invalid or missing master key")
@@ -246,7 +246,7 @@ async def update_config(body: ConfigUpdateRequest, request: Request) -> JSONResp
     config_path = anyio.Path(os.environ.get("ROUTERBOT_CONFIG", "routerbot_config.yaml"))
     try:
         # Read existing YAML to preserve structure (comments are lost by re-serialization)
-        raw: dict[str, object] = {}
+        raw: dict[str, Any] = {}
         if await config_path.exists():
             raw = yaml.safe_load(await config_path.read_text(encoding="utf-8")) or {}
 
