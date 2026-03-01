@@ -6,7 +6,9 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 
 export function MainLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => window.matchMedia("(max-width: 1024px)").matches,
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Auto-collapse sidebar on small screens
@@ -18,7 +20,6 @@ export function MainLayout() {
         setMobileOpen(false);
       }
     };
-    if (mq.matches) setSidebarCollapsed(true);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);

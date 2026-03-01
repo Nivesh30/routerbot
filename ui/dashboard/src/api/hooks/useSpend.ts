@@ -11,8 +11,30 @@ export function useSpendReport(params?: {
 }) {
   return useQuery({
     queryKey: ["spend", "report", params],
-    queryFn: () =>
-      api.get<SpendSummary>(endpoints.spendReport, params as Record<string, string>),
+    queryFn: async () => {
+      const resp = await api.get<{ report: { model: string; total_cost: number }[] }>(
+        endpoints.spendReport,
+        params as Record<string, string>,
+      );
+      const report = resp.report ?? [];
+      const by_model: Record<string, number> = {};
+      let total_spend = 0;
+      for (const r of report) {
+        by_model[r.model] = r.total_cost;
+        total_spend += r.total_cost;
+      }
+      return {
+        total_spend,
+        total_requests: 0,
+        total_tokens: 0,
+        period_start: "",
+        period_end: "",
+        by_model,
+        by_provider: {},
+        by_team: {},
+        by_user: {},
+      } as SpendSummary;
+    },
   });
 }
 
@@ -28,11 +50,13 @@ export function useSpendLogs(params?: {
 }) {
   return useQuery({
     queryKey: ["spend", "logs", params],
-    queryFn: () =>
-      api.get<{ items: SpendRecord[]; total: number }>(
+    queryFn: async () => {
+      const resp = await api.get<{ logs: SpendRecord[] }>(
         endpoints.spendLogs,
         params as Record<string, string>,
-      ),
+      );
+      return { items: resp.logs ?? [], total: (resp.logs ?? []).length };
+    },
   });
 }
 

@@ -12,6 +12,7 @@ export const endpoints = {
   // Config
   config: "/config",
   configReload: "/config/reload",
+  configUpdate: "/config/update",
 
   // Models (OpenAI-compatible, read-only)
   models: "/v1/models",

@@ -18,6 +18,7 @@ import {
   useTeam,
   useAddTeamMember,
 } from "../api/hooks/useTeams";
+import { useModels } from "../api/hooks/useModels";
 import { useUsers } from "../api/hooks/useUsers";
 import { formatCurrency, formatNumber, formatDate } from "../utils/formatters";
 
@@ -72,10 +73,22 @@ function TeamFormModal({
   const [errors, setErrors] = useState<Partial<TeamFormData>>({});
   const create = useCreateTeam();
   const update = useUpdateTeam();
+  const { data: availableModels = [] } = useModels();
 
   function set(k: keyof TeamFormData, v: string) {
     setForm((p) => ({ ...p, [k]: v }));
     setErrors((p) => ({ ...p, [k]: undefined }));
+  }
+
+  function toggleModel(modelName: string) {
+    const current = form.models
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
+    const next = current.includes(modelName)
+      ? current.filter((m) => m !== modelName)
+      : [...current, modelName];
+    set("models", next.join(", "));
   }
 
   function validate() {
@@ -134,12 +147,49 @@ function TeamFormModal({
           error={errors.max_budget}
           placeholder="Unlimited"
         />
-        <Input
-          label="Allowed models (comma-separated)"
-          value={form.models}
-          onChange={(e) => set("models", e.target.value)}
-          placeholder="gpt-4o, claude-sonnet-4-20250514"
-        />
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+            Allowed models
+          </label>
+          {availableModels.length > 0 ? (
+            <div className="flex flex-wrap gap-2 rounded-lg border border-surface-200 dark:border-surface-700 p-3 bg-surface-50 dark:bg-surface-900">
+              {availableModels.map((m) => {
+                const selected = form.models
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+                  .includes(m.model_name);
+                return (
+                  <label
+                    key={m.model_name}
+                    className={`inline-flex items-center gap-1.5 cursor-pointer rounded-md px-2 py-1 text-xs border ${
+                      selected
+                        ? "bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-600 text-primary-700 dark:text-primary-300"
+                        : "bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-600 text-surface-600 dark:text-surface-400"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleModel(m.model_name)}
+                      className="sr-only"
+                    />
+                    {m.model_name}
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <Input
+              value={form.models}
+              onChange={(e) => set("models", e.target.value)}
+              placeholder="gpt-4o, claude-sonnet-4-20250514"
+            />
+          )}
+          <p className="text-xs text-surface-400 mt-1">
+            {form.models || "All models (no restriction)"}
+          </p>
+        </div>
       </div>
     </Modal>
   );

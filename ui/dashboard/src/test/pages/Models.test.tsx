@@ -180,7 +180,7 @@ describe("Models Page", () => {
     setupHooks();
     render(<Models />, { wrapper: Wrapper });
     fireEvent.click(screen.getByText("Add Model"));
-    expect(screen.getByText("Provider/Model")).toBeInTheDocument();
+    expect(screen.getByText("Provider / Model")).toBeInTheDocument();
   });
 
   it("add model form validates required fields", async () => {

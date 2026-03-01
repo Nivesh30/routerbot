@@ -18,6 +18,9 @@ import {
   useRotateKey,
   useUpdateKey,
 } from "../api/hooks/useKeys";
+import { useModels } from "../api/hooks/useModels";
+import { useTeams } from "../api/hooks/useTeams";
+import { useUsers } from "../api/hooks/useUsers";
 import { Badge } from "../components/common/Badge";
 import { Button } from "../components/common/Button";
 import { CopyButton } from "../components/common/CopyButton";
@@ -170,6 +173,9 @@ const columns: Column<VirtualKey>[] = [
 // ---------------------------------------------------------------------------
 export function Keys() {
   const { data: keys = [], isLoading } = useKeys();
+  const { data: models = [] } = useModels();
+  const { data: teams = [] } = useTeams();
+  const { data: users = [] } = useUsers();
   const generateKey = useGenerateKey();
   const updateKey = useUpdateKey();
   const deleteKey = useDeleteKey();
@@ -373,28 +379,105 @@ export function Keys() {
   };
 
   // Render the form fields (shared between generate and edit modals)
+  const selectCls =
+    "w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm dark:border-surface-600 dark:bg-surface-800 dark:text-surface-100 focus:outline-none focus:ring-1 focus:ring-primary-500";
+
   const renderFormFields = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="User ID"
-          placeholder="UUID (optional)"
-          value={form.user_id}
-          onChange={(e) => updateField("user_id", e.target.value)}
-        />
-        <Input
-          label="Team ID"
-          placeholder="UUID (optional)"
-          value={form.team_id}
-          onChange={(e) => updateField("team_id", e.target.value)}
-        />
+        {/* User dropdown */}
+        <div className="space-y-1">
+          <label htmlFor="key-user-id" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+            User ID
+          </label>
+          <select
+            id="key-user-id"
+            value={form.user_id}
+            onChange={(e) => updateField("user_id", e.target.value)}
+            className={selectCls}
+          >
+            <option value="">None (optional)</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.email ?? u.id}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Team dropdown */}
+        <div className="space-y-1">
+          <label htmlFor="key-team-id" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+            Team ID
+          </label>
+          <select
+            id="key-team-id"
+            value={form.team_id}
+            onChange={(e) => updateField("team_id", e.target.value)}
+            className={selectCls}
+          >
+            <option value="">None (optional)</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.team_alias}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-      <Input
-        label="Allowed Models"
-        placeholder="e.g. gpt-4o, claude-sonnet-4-20250514 (comma-separated, empty = all)"
-        value={form.models}
-        onChange={(e) => updateField("models", e.target.value)}
-      />
+      {/* Models multi-select (checkboxes) */}
+      <div className="space-y-1">
+        <label htmlFor="key-allowed-models" className="block text-xs font-medium text-surface-600 dark:text-surface-400">
+          Allowed Models
+        </label>
+        {models.length > 0 ? (
+          <div className="flex flex-wrap gap-2 rounded-lg border border-surface-200 dark:border-surface-700 p-3 bg-surface-50 dark:bg-surface-900">
+            {models.map((m) => {
+              const selected = form.models
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .includes(m.model_name);
+              return (
+                <label
+                  key={m.model_name}
+                  className={`inline-flex items-center gap-1.5 cursor-pointer rounded-md px-2 py-1 text-xs border ${
+                    selected
+                      ? "bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-600 text-primary-700 dark:text-primary-300"
+                      : "bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-600 text-surface-600 dark:text-surface-400"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => {
+                      const current = form.models
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      const next = selected
+                        ? current.filter((name) => name !== m.model_name)
+                        : [...current, m.model_name];
+                      updateField("models", next.join(", "));
+                    }}
+                    className="sr-only"
+                  />
+                  {m.model_name}
+                </label>
+              );
+            })}
+          </div>
+        ) : (
+          <Input
+            id="key-allowed-models"
+            placeholder="e.g. gpt-4o, claude-sonnet-4-20250514 (comma-separated, empty = all)"
+            value={form.models}
+            onChange={(e) => updateField("models", e.target.value)}
+          />
+        )}
+        <p className="text-xs text-surface-400 mt-1">
+          {form.models ? form.models : "All models (no restriction)"}
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Budget Limit ($)"
