@@ -1,6 +1,6 @@
 # 🚀 RouterBot — Open Source LLM Gateway
 
-**Call 100+ LLMs through a single, unified API. No enterprise paywalls.**
+**Call any LLM through a single, unified API. No enterprise paywalls.**
 
 RouterBot is a fully open-source LLM gateway and proxy server that provides a unified OpenAI-compatible API for routing requests to any LLM provider. Every feature — SSO, RBAC, guardrails, audit logs, advanced spend tracking — is free and open source. No enterprise tier, no license keys, no artificial limits.
 
@@ -30,7 +30,7 @@ Existing LLM gateways gate critical production features (SSO, audit logs, granul
 ## Core Capabilities
 
 - **Unified API**: OpenAI-compatible `/chat/completions`, `/responses`, `/embeddings`, `/images`, `/audio`, `/batches`, `/rerank` endpoints
-- **100+ Providers**: OpenAI, Anthropic, Azure, Bedrock, Vertex AI, Gemini, Groq, Ollama, vLLM, and many more
+- **Broad Provider Support**: Dedicated adapters for OpenAI, Anthropic, Azure, Bedrock, Vertex AI, Gemini, Groq, Ollama, Cohere, Mistral, and DeepSeek, plus a generic OpenAI-compatible adapter for vLLM, Together AI, Fireworks, and any other OpenAI-compatible endpoint
 - **AI Gateway (Proxy Server)**: Centralized LLM gateway with auth, rate limiting, load balancing, and cost tracking
 - **Python SDK**: Direct library integration with retry/fallback routing
 - **Admin Dashboard**: Full management UI for keys, models, teams, spend, and configuration

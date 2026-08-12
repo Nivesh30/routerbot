@@ -54,6 +54,10 @@ docker-compose.override.yml
 .env.*
 !.env.example
 
+# ─── Local config (may contain secrets / master keys) ──────
+routerbot_config.yaml
+!routerbot_config.example.yaml
+
 # ─── Node (Dashboard UI) ──────────────────────────────────
 node_modules/
 ui/dashboard/dist/

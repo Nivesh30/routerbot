@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from routerbot.core.exceptions import BadRequestError, ModelNotFoundError
 from routerbot.core.types import CompletionRequest
 
 if TYPE_CHECKING:
@@ -44,42 +43,11 @@ async def _get_provider_for_model(request: Request, model_name: str) -> Any:
     ModelNotFoundError
         If the model is not configured.
     """
+    from routerbot.proxy.completion_helper import get_provider_for_model
+
     state = getattr(request.app.state, "routerbot", None)
     config = state.config if state else None
-
-    if config is None:
-        raise ModelNotFoundError(model_name)
-
-    # Find the model entry in config
-    entry = next((m for m in config.model_list if m.model_name == model_name), None)
-    if entry is None:
-        raise ModelNotFoundError(model_name)
-
-    # Resolve provider from the model field (format: "provider/model")
-    provider_model = entry.provider_params.model
-    if "/" not in provider_model:
-        raise BadRequestError(f"Invalid provider/model format: {provider_model!r}")
-
-    provider_name, _ = provider_model.split("/", 1)
-
-    # Import and instantiate the provider
-    from routerbot.providers.registry import get_provider_class
-
-    provider_cls = get_provider_class(provider_name)
-
-    # Resolve API key (support os.environ/ references)
-    api_key = entry.provider_params.api_key
-    if api_key and api_key.startswith("os.environ/"):
-        import os
-
-        env_var = api_key.removeprefix("os.environ/")
-        api_key = os.environ.get(env_var)
-
-    return provider_cls(
-        api_key=api_key,
-        api_base=entry.provider_params.api_base,
-        custom_headers=entry.provider_params.extra_headers,
-    )
+    return get_provider_for_model(config, model_name)
 
 
 def _log_usage(response: CompletionResponse, model: str) -> None:

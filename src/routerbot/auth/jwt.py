@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 # Configuration dataclass
 # ---------------------------------------------------------------------------
 
-DEFAULT_ALGORITHMS = ["RS256", "HS256"]
 JWKS_REFRESH_INTERVAL = 3600  # seconds
 
 
@@ -45,7 +44,11 @@ class JWTConfig:
     jwks_uri: str | None = None
     issuer: str | None = None
     audience: str | None = None
-    algorithms: list[str] = field(default_factory=lambda: list(DEFAULT_ALGORITHMS))
+    # None = infer a single algorithm from what's configured (HS256 if only
+    # `secret` is set, RS256 if `jwks_uri` is set). Accepting both by default
+    # opens an algorithm-confusion surface for hybrid deployments — set this
+    # explicitly to ["RS256", "HS256"] only if you deliberately want both.
+    algorithms: list[str] | None = None
     claim_mapping: dict[str, str] = field(
         default_factory=lambda: {
             "user_id": "sub",
@@ -55,6 +58,21 @@ class JWTConfig:
         }
     )
     cache_ttl: int = 300  # seconds — how long to cache verified tokens
+    # Defense-in-depth: when set, only these exact claim values (as they
+    # appear in the token, pre-mapping) are allowed to map to the admin role.
+    # Any other value that would otherwise map to "admin" is downgraded to
+    # "editor" instead, and a warning is logged. Leave as None to trust the
+    # IdP's role claim as-is (the previous, less defensive, behaviour).
+    trusted_admin_claim_values: list[str] | None = None
+
+    def __post_init__(self) -> None:
+        if self.algorithms is None:
+            if self.jwks_uri:
+                self.algorithms = ["RS256"]
+            elif self.secret:
+                self.algorithms = ["HS256"]
+            else:
+                self.algorithms = ["RS256"]
 
 
 # ---------------------------------------------------------------------------
@@ -281,13 +299,23 @@ class JWTAuthenticator:
 
         email = payload.get(mapping.get("email", "email"))
         team_id_raw = payload.get(mapping.get("team_id", "org_id"))
-        role = payload.get(mapping.get("role", "routerbot_role"), "api_user")
+        role = str(payload.get(mapping.get("role", "routerbot_role"), "api_user"))
+
+        allowed_admin_values = self._config.trusted_admin_claim_values
+        if allowed_admin_values is not None and role.lower() == "admin" and role not in allowed_admin_values:
+            logger.warning(
+                "JWT claimed role=admin for user %s but value %r is not in "
+                "trusted_admin_claim_values — downgrading to 'editor'",
+                user_id,
+                role,
+            )
+            role = "editor"
 
         return JWTClaims(
             user_id=user_id,
             email=str(email) if email else None,
             team_id=str(team_id_raw) if team_id_raw else None,
-            role=str(role),
+            role=role,
             raw=payload,
         )
 
