@@ -5,8 +5,10 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/ui/dashboard
 
-# Enable pnpm via corepack (ships with Node 16.10+)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Enable pnpm via corepack (ships with Node 16.10+). Pinned (not @latest) so a
+# new pnpm release's policy changes (e.g. build-script approval) can't break
+# CI/image builds without a deliberate version bump here.
+RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 
 # Install dependencies first (layer-cached unless lockfile changes)
 COPY ui/dashboard/package.json ui/dashboard/pnpm-lock.yaml ./

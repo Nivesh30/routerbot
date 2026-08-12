@@ -37,7 +37,10 @@ export function useUpdateConfig() {
 export function useSSOProviders() {
   return useQuery({
     queryKey: ["sso-providers"],
-    queryFn: () => api.get<SSOProvider[]>(endpoints.ssoProviders),
+    queryFn: async () => {
+      const res = await api.get<{ providers: SSOProvider[] }>(endpoints.ssoProviders);
+      return res.providers;
+    },
   });
 }
 

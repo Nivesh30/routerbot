@@ -65,6 +65,13 @@ general_settings:
   request_timeout: 600
   log_level: INFO
   log_format: json
+  # CORS is closed by default (no cross-origin requests allowed). Set explicit
+  # origins to allow your dashboard/frontend to call this API cross-origin —
+  # never use "*" together with cors_allow_credentials: true, browsers permit
+  # any site to send credentialed requests when both are set.
+  # cors_allow_origins:
+  #   - https://dashboard.example.com
+  # cors_allow_credentials: true
 
 # ─── Router Settings ──────────────────────────────────────
 router_settings:

@@ -91,7 +91,10 @@ class GeneralSettings(BaseModel):
     request_timeout: int = Field(default=600, gt=0, description="Request timeout in seconds")
     max_request_size_mb: float = Field(default=100.0, gt=0, description="Max request body size in MB")
     max_response_size_mb: float = Field(default=100.0, gt=0, description="Max response body size for logging")
-    cors_allow_origins: list[str] = Field(default_factory=lambda: ["*"], description="CORS allowed origins")
+    cors_allow_origins: list[str] = Field(
+        default_factory=list,
+        description="CORS allowed origins (empty = no cross-origin requests allowed)",
+    )
     cors_allow_credentials: bool = Field(default=True, description="CORS allow credentials")
     block_robots: bool = Field(default=False, description="Return disallow-all robots.txt")
     log_level: str = Field(default="INFO", description="Logging level")

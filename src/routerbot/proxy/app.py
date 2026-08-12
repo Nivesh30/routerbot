@@ -15,6 +15,7 @@ and the router layer are registered in separate modules.
 from __future__ import annotations
 
 import logging
+import os
 import pathlib
 import time
 import uuid
@@ -58,7 +59,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # Resolve: src/routerbot/proxy/app.py → project root → ui/dashboard/dist
-_DASHBOARD_DIST = (pathlib.Path(__file__).parent.parent.parent.parent / "ui" / "dashboard" / "dist").resolve()
+# When installed as a package (e.g. in Docker), __file__ is in site-packages,
+# so allow ROUTERBOT_DASHBOARD_DIST env override for production deployments.
+_DASHBOARD_DIST_ENV = os.environ.get("ROUTERBOT_DASHBOARD_DIST")
+if _DASHBOARD_DIST_ENV:
+    _DASHBOARD_DIST = pathlib.Path(_DASHBOARD_DIST_ENV).resolve()
+else:
+    _DASHBOARD_DIST = (pathlib.Path(__file__).parent.parent.parent.parent / "ui" / "dashboard" / "dist").resolve()
 
 # ---------------------------------------------------------------------------
 # Application factory
@@ -94,7 +101,7 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
 
     app = FastAPI(
         title="RouterBot",
-        description="Open Source LLM Gateway — unified OpenAI-compatible API for 100+ models.",
+        description="Open Source LLM Gateway — unified OpenAI-compatible API for any LLM provider.",
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",
@@ -110,11 +117,19 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
     # -----------------------------------------------------------------
 
     # CORS
-    cors_origins = ["*"]
-    cors_credentials = True
+    cors_origins: list[str] = []
+    cors_credentials = False
     if config and config.general_settings:
         cors_origins = config.general_settings.cors_allow_origins
         cors_credentials = config.general_settings.cors_allow_credentials
+
+    if cors_origins == ["*"] and cors_credentials:
+        logger.warning(
+            "cors_allow_origins=['*'] with cors_allow_credentials=True is unsafe "
+            "(allows any origin to make authenticated cross-origin requests) — "
+            "forcing allow_credentials=False. Set explicit origins to allow credentials."
+        )
+        cors_credentials = False
 
     app.add_middleware(
         CORSMiddleware,
@@ -228,14 +243,49 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         try:
             from routerbot.core.config import load_config
 
-            loaded = load_config()
+            config_path = os.environ.get("ROUTERBOT_CONFIG")
+            loaded = load_config(config_path=config_path)
             state.config = loaded
-            logger.info("Loaded config from default location")
+            logger.info(
+                "Loaded config from %s",
+                config_path or "default location",
+            )
         except Exception as exc:
             logger.warning("Could not load config file: %s — running with defaults", exc)
             from routerbot.core.config_models import RouterBotConfig
 
             state.config = RouterBotConfig()
+
+    # ── Database & Redis ──────────────────────────────────────────────────
+    cfg = state.config  # shorthand — guaranteed non-None after loading above
+    db_url = cfg.general_settings.database_url if cfg else "sqlite+aiosqlite:///routerbot.db"
+    try:
+        from routerbot.db.engine import create_engine, create_session_factory
+        from routerbot.db.models import Base
+        from routerbot.db.session import configure_session_factory
+
+        engine = create_engine(db_url)
+        session_factory = create_session_factory(engine)
+        configure_session_factory(session_factory)
+
+        # Ensure tables exist (safe to call repeatedly for idempotent DDL)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        state.db_engine = engine  # type: ignore[attr-defined]
+        logger.info("Database initialised (%s)", "postgresql" if "postgresql" in db_url else "sqlite")
+    except Exception as exc:
+        logger.warning("Database initialisation failed: %s — DB-dependent routes will return errors", exc)
+
+    # Redis (optional)
+    redis_url = cfg.general_settings.redis_url if cfg else None
+    if redis_url:
+        try:
+            import redis.asyncio as aioredis
+
+            state.redis = await aioredis.from_url(redis_url, decode_responses=True)  # type: ignore[attr-defined]
+            logger.info("Redis connected (%s)", redis_url.split("@")[-1] if "@" in redis_url else redis_url)
+        except Exception as exc:
+            logger.warning("Redis connection failed: %s", exc)
 
     # Initialise the router layer
     from routerbot.router.router import Router
@@ -387,18 +437,25 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             logger.info("Fine-grained permissions enabled with %d sets", len(aa_config.permission_sets))
 
     # -- Batch processing & async job queue ----------------------------------
+    from functools import partial
+
     from routerbot.core.batch.batch_manager import BatchManager
     from routerbot.core.batch.job_queue import JobQueue
     from routerbot.core.batch.models import BatchConfig
     from routerbot.core.batch.worker_pool import WorkerPool
+    from routerbot.proxy.completion_helper import handle_async_job, handle_batch_request
 
-    batch_raw = config.batch if hasattr(config, "batch") else {}
+    batch_raw = getattr(state.config, "batch", None) or {}
     batch_cfg = BatchConfig(**batch_raw) if batch_raw else BatchConfig()
 
     if batch_cfg.enabled:
         jq = JobQueue(config=batch_cfg.queue)
-        bm = BatchManager(config=batch_cfg.queue)
-        wp = WorkerPool(queue=jq, config=batch_cfg.queue)
+        bm = BatchManager(config=batch_cfg.queue, handler=partial(handle_batch_request, state.config))
+        wp = WorkerPool(
+            queue=jq,
+            handler=partial(handle_async_job, state.config),
+            config=batch_cfg.queue,
+        )
         await wp.start()
         state.job_queue = jq  # type: ignore[attr-defined]
         state.batch_manager = bm  # type: ignore[attr-defined]
@@ -414,15 +471,23 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
     from routerbot.hub.models import HubConfig
     from routerbot.hub.playground import Playground
     from routerbot.hub.prompt_manager import PromptManager
+    from routerbot.proxy.completion_helper import complete_via_config, judge_complete_via_config
 
-    hub_raw = config.hub if hasattr(config, "hub") else {}
+    hub_raw = getattr(state.config, "hub", None) or {}
     hub_cfg = HubConfig(**hub_raw) if hub_raw else HubConfig()
 
     if hub_cfg.enabled:
-        model_hub = ModelHub()
+        # Wraps complete_via_config's (model, messages, params) signature so
+        # Hub/Playground call it exactly like their stub handler.
+        async def _hub_handler(
+            model_id: str, messages: list[dict[str, Any]], params: dict[str, Any]
+        ) -> tuple[str, int, int]:
+            return await complete_via_config(state.config, model_id, messages, params)
+
+        model_hub = ModelHub(handler=_hub_handler)
         model_hub.register_defaults()
         state.model_hub = model_hub  # type: ignore[attr-defined]
-        state.playground = Playground(config=hub_cfg)  # type: ignore[attr-defined]
+        state.playground = Playground(handler=_hub_handler, config=hub_cfg)  # type: ignore[attr-defined]
         state.prompt_manager = PromptManager(config=hub_cfg)  # type: ignore[attr-defined]
         logger.info("AI Hub & Playground enabled")
 
@@ -432,12 +497,13 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
     from routerbot.evaluation.models import EvalConfig
     from routerbot.evaluation.regression import RegressionDetector
 
-    eval_raw = config.evaluation if hasattr(config, "evaluation") else {}
+    eval_raw = getattr(state.config, "evaluation", None) or {}
     eval_cfg = EvalConfig(**eval_raw) if eval_raw else EvalConfig()
 
     if eval_cfg.enabled:
+        judge_handler = partial(judge_complete_via_config, state.config)
         state.benchmark = Benchmark()  # type: ignore[attr-defined]
-        state.llm_judge = LLMJudge(config=eval_cfg.judge)  # type: ignore[attr-defined]
+        state.llm_judge = LLMJudge(config=eval_cfg.judge, handler=judge_handler)  # type: ignore[attr-defined]
         state.regression_detector = RegressionDetector(config=eval_cfg.regression)  # type: ignore[attr-defined]
         logger.info("Evaluation & Benchmarking enabled")
 
@@ -447,7 +513,7 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
     from routerbot.k8s.models import K8sOperatorConfig
     from routerbot.k8s.operator import Operator as K8sOperator
 
-    k8s_raw = config.k8s_operator if hasattr(config, "k8s_operator") else {}
+    k8s_raw = getattr(state.config, "k8s_operator", None) or {}
     k8s_cfg = K8sOperatorConfig(**k8s_raw) if k8s_raw else K8sOperatorConfig()
 
     if k8s_cfg.enabled:
@@ -496,6 +562,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
         with contextlib.suppress(Exception):
             await state.redis.aclose()
 
+    # Dispose database engine
+    db_engine = getattr(state, "db_engine", None)
+    if db_engine is not None:
+        await db_engine.dispose()
+
     logger.info("RouterBot shutdown complete ✓")
 
 
@@ -515,7 +586,9 @@ def _register_routes(app: FastAPI) -> None:
     from routerbot.proxy.routes.config import router as config_router
     from routerbot.proxy.routes.dashboard import router as dashboard_router
     from routerbot.proxy.routes.embeddings import router as embeddings_router
+    from routerbot.proxy.routes.eval import router as eval_router
     from routerbot.proxy.routes.health import router as health_router
+    from routerbot.proxy.routes.hub import router as hub_router
     from routerbot.proxy.routes.images import router as images_router
     from routerbot.proxy.routes.keys import router as keys_router
     from routerbot.proxy.routes.mcp import router as mcp_router
@@ -574,6 +647,8 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(models_router, prefix="/v1")
     app.include_router(mcp_router, prefix="/v1")
     app.include_router(a2a_router, prefix="/v1")
+    app.include_router(hub_router, prefix="/v1")
+    app.include_router(eval_router, prefix="/v1")
 
     # Register an OpenAI-compatible models fallback at root too
     @app.get("/", include_in_schema=False, response_model=None)

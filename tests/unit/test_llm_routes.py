@@ -16,7 +16,7 @@ All provider calls are mocked to avoid real API calls.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -146,6 +146,32 @@ async def client() -> AsyncIterator[AsyncClient]:
     test_app = create_app(config=config)
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         yield ac
+
+
+@pytest_asyncio.fixture()
+async def batch_client() -> AsyncIterator[AsyncClient]:
+    """Async test client with batch processing enabled and a mock provider.
+
+    Real batch execution now calls providers for real (see
+    ``proxy/completion_helper.handle_batch_request``), so the provider
+    registry is patched for the lifetime of the client, same as the other
+    per-test patches in this file. ``state.batch_manager`` is only created
+    during the app's startup hook, and ``ASGITransport`` doesn't fire ASGI
+    lifespan events, so ``_startup`` is invoked directly (same pattern as
+    ``test_middleware.py::TestRouterIntegration``).
+    """
+    from routerbot.proxy.app import _shutdown, _startup
+
+    config = _make_config()
+    config.batch = {"enabled": True}
+    test_app = create_app(config=config)
+    state = test_app.state.routerbot
+    mock_cls = _mock_provider_cls(chat_response=_make_completion_response())
+    with patch("routerbot.providers.registry.get_provider_class", return_value=mock_cls):
+        await _startup(test_app, state, config)
+        async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+            yield ac
+        await _shutdown(test_app, state)
 
 
 # ---------------------------------------------------------------------------
@@ -526,63 +552,111 @@ async def test_rerank_unknown_model_returns_404(client: AsyncClient) -> None:
 # Batches
 # ---------------------------------------------------------------------------
 
+_BATCH_REQUEST_BODY = {
+    "requests": [
+        {
+            "custom_id": "req-1",
+            "method": "POST",
+            "url": "/v1/chat/completions",
+            "body": {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
+        }
+    ]
+}
+
 
 @pytest.mark.asyncio
-async def test_create_batch_returns_200(client: AsyncClient) -> None:
-    """POST /v1/batches should return 200 and create a batch object."""
-    resp = await client.post("/v1/batches")
+async def test_batches_503_when_not_enabled(client: AsyncClient) -> None:
+    """Batch routes should 503 when batch.enabled is not set (the `client` fixture)."""
+    resp = await client.post("/v1/batches", json=_BATCH_REQUEST_BODY)
+    assert resp.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_create_batch_returns_200(batch_client: AsyncClient) -> None:
+    """POST /v1/batches should return 200, create a batch, and run it for real."""
+    resp = await batch_client.post("/v1/batches", json=_BATCH_REQUEST_BODY)
     assert resp.status_code == 200
     data = resp.json()
     assert data["object"] == "batch"
-    assert "id" in data
     assert data["id"].startswith("batch_")
+    assert data["request_counts"]["total"] == 1
+    assert data["status"] in ("validating", "in_progress")
+
+    # Execution happens in a background task — poll until it's done.
+    import asyncio
+
+    for _ in range(50):
+        poll = (await batch_client.get(f"/v1/batches/{data['id']}")).json()
+        if poll["status"] == "completed":
+            break
+        await asyncio.sleep(0.05)
+    else:
+        pytest.fail("Batch did not complete in time")
+
+    assert poll["results"] and poll["results"][0]["custom_id"] == "req-1"
+    assert poll["results"][0]["status_code"] == 200
 
 
 @pytest.mark.asyncio
-async def test_list_batches_returns_200(client: AsyncClient) -> None:
+async def test_create_batch_empty_requests_returns_400(batch_client: AsyncClient) -> None:
+    """POST /v1/batches with no requests should return a 400 validation error."""
+    resp = await batch_client.post("/v1/batches", json={"requests": []})
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_list_batches_returns_200(batch_client: AsyncClient) -> None:
     """GET /v1/batches should return 200 with list object."""
-    resp = await client.get("/v1/batches")
+    await batch_client.post("/v1/batches", json=_BATCH_REQUEST_BODY)
+    resp = await batch_client.get("/v1/batches")
     assert resp.status_code == 200
     data = resp.json()
     assert data["object"] == "list"
     assert isinstance(data["data"], list)
+    assert len(data["data"]) == 1
 
 
 @pytest.mark.asyncio
-async def test_get_batch_returns_200_for_known_batch(client: AsyncClient) -> None:
+async def test_get_batch_returns_200_for_known_batch(batch_client: AsyncClient) -> None:
     """GET /v1/batches/{id} should return 200 for a created batch."""
-    # Create a batch first
-    create_resp = await client.post("/v1/batches")
+    create_resp = await batch_client.post("/v1/batches", json=_BATCH_REQUEST_BODY)
     batch_id = create_resp.json()["id"]
 
-    # Then retrieve it
-    get_resp = await client.get(f"/v1/batches/{batch_id}")
+    get_resp = await batch_client.get(f"/v1/batches/{batch_id}")
     assert get_resp.status_code == 200
     assert get_resp.json()["id"] == batch_id
 
 
 @pytest.mark.asyncio
-async def test_get_batch_returns_404_for_unknown(client: AsyncClient) -> None:
+async def test_get_batch_returns_404_for_unknown(batch_client: AsyncClient) -> None:
     """GET /v1/batches/{id} should return 404 for unknown batch."""
-    resp = await client.get("/v1/batches/nonexistent-batch")
+    resp = await batch_client.get("/v1/batches/nonexistent-batch")
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_cancel_batch_returns_200(client: AsyncClient) -> None:
-    """POST /v1/batches/{id}/cancel should return 200 and mark as cancelling."""
-    create_resp = await client.post("/v1/batches")
-    batch_id = create_resp.json()["id"]
+async def test_cancel_batch_returns_200(batch_client: AsyncClient) -> None:
+    """POST /v1/batches/{id}/cancel should return 200 and mark as cancelled.
 
-    cancel_resp = await client.post(f"/v1/batches/{batch_id}/cancel")
+    Execution is stubbed out here so the batch stays cancellable (with the
+    real handler, the mock provider resolves fast enough that the batch is
+    typically already "completed" by the time cancel is called).
+    """
+    from routerbot.core.batch.batch_manager import BatchManager
+
+    with patch.object(BatchManager, "execute_batch", new=AsyncMock()):
+        create_resp = await batch_client.post("/v1/batches", json=_BATCH_REQUEST_BODY)
+        batch_id = create_resp.json()["id"]
+
+        cancel_resp = await batch_client.post(f"/v1/batches/{batch_id}/cancel")
     assert cancel_resp.status_code == 200
-    assert cancel_resp.json()["status"] == "cancelling"
+    assert cancel_resp.json()["status"] == "cancelled"
 
 
 @pytest.mark.asyncio
-async def test_cancel_unknown_batch_returns_404(client: AsyncClient) -> None:
+async def test_cancel_unknown_batch_returns_404(batch_client: AsyncClient) -> None:
     """POST /v1/batches/{id}/cancel should return 404 for unknown batch."""
-    resp = await client.post("/v1/batches/unknown-batch/cancel")
+    resp = await batch_client.post("/v1/batches/unknown-batch/cancel")
     assert resp.status_code == 404
 
 

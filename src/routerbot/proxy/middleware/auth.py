@@ -12,6 +12,7 @@ skipped via a configurable allow-list.
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -90,7 +91,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if config and config.general_settings:
             master_key = config.general_settings.master_key or ""
 
-        if master_key and (token == master_key or master_header == master_key):
+        if master_key and (
+            secrets.compare_digest(token, master_key) or secrets.compare_digest(master_header, master_key)
+        ):
             return AuthContext(
                 user_id="master",
                 role=Role.ADMIN,

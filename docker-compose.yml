@@ -9,6 +9,8 @@
 #
 # Environment:
 #   Copy .env.example → .env and fill in API keys before starting.
+#   Required: POSTGRES_PASSWORD, and GRAFANA_ADMIN_PASSWORD if using --profile monitoring.
+#   (No insecure defaults are provided for these — compose will refuse to start without them.)
 # ──────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -23,11 +25,11 @@ services:
     ports:
       - "${ROUTERBOT_PORT:-8000}:8000"
     volumes:
-      - ./routerbot_config.yaml:/config/routerbot_config.yaml:ro
+      - ./routerbot_config.yaml:/config/routerbot_config.yaml
     environment:
       - ROUTERBOT_CONFIG=/config/routerbot_config.yaml
       - ROUTERBOT_DASHBOARD_DIST=/app/ui/dashboard/dist
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-routerbot}:${POSTGRES_PASSWORD:-routerbot}@postgres:5432/${POSTGRES_DB:-routerbot}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-routerbot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-routerbot}
       - REDIS_URL=redis://redis:6379/0
       # LLM Provider API Keys (set in .env)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -57,7 +59,6 @@ services:
           memory: 256M
     security_opt:
       - no-new-privileges:true
-    read_only: true
     tmpfs:
       - /tmp
     networks:
@@ -70,12 +71,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-routerbot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-routerbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-routerbot}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    # Not published by default — only reachable on routerbot-net.
+    # Uncomment (or use --profile dev-tools) to inspect the DB from the host.
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-routerbot}"]
       interval: 10s
@@ -104,8 +107,10 @@ services:
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redisdata:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # Not published by default — only reachable on routerbot-net.
+    # Uncomment to inspect Redis from the host during local dev.
+    # ports:
+    #   - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -163,7 +168,7 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=routerbot
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
       - GF_USERS_ALLOW_SIGN_UP=false
     deploy:
       resources:
