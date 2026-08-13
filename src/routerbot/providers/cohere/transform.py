@@ -4,6 +4,9 @@ Cohere's v2 Chat API is OpenAI-compatible at the message level, but differs in:
 - Finish reason naming (``COMPLETE`` → ``stop``, ``TOOL_CALL`` → ``tool_calls``)
 - Embeddings input format (``{"texts": [...], "model": "...", "input_type": "..."}`` )
 - Response shape for embeddings (``embeddings.float[]``)
+- Streaming: Cohere v2 ``/chat`` streaming emits its own SSE event schema
+  (``message-start``, ``content-delta``, ``message-end``, etc.), *not*
+  OpenAI-format chunks — see :func:`parse_cohere_stream_event`.
 """
 
 from __future__ import annotations
@@ -16,7 +19,10 @@ from routerbot.core.enums import FinishReason, Role
 from routerbot.core.types import (
     Choice,
     ChoiceMessage,
+    ChunkChoice,
     CompletionResponse,
+    CompletionResponseChunk,
+    DeltaMessage,
     FunctionCall,
     ToolCall,
     Usage,
@@ -85,3 +91,64 @@ def cohere_response_to_openai(data: dict[str, Any], model: str) -> CompletionRes
             total_tokens=prompt_tokens + completion_tokens,
         ),
     )
+
+
+def parse_cohere_stream_event(data: dict[str, Any], model: str) -> CompletionResponseChunk | None:
+    """Convert one Cohere v2 ``/chat`` SSE event into an OpenAI-format chunk.
+
+    Cohere's streaming events (per ``type``):
+    - ``message-start`` — stream begins; emits the assistant role delta.
+    - ``content-start`` / ``content-end`` — text block boundaries; no
+      OpenAI equivalent, so no chunk is emitted.
+    - ``content-delta`` — incremental text; maps to a ``delta.content`` chunk.
+    - ``message-end`` — stream ends; carries ``finish_reason`` and usage.
+    - ``tool-*`` events (tool-call streaming) — not yet mapped; skipped
+      rather than raising, so a tool-call response falls back to silently
+      omitting tool_call deltas instead of erroring the whole stream.
+
+    Returns ``None`` for event types that don't correspond to an OpenAI
+    chunk (the caller should just continue to the next SSE line).
+    """
+    event_type = data.get("type")
+
+    if event_type == "message-start":
+        return CompletionResponseChunk(
+            model=model,
+            choices=[ChunkChoice(index=0, delta=DeltaMessage(role=Role.ASSISTANT))],
+        )
+
+    if event_type == "content-delta":
+        text = data.get("delta", {}).get("message", {}).get("content", {}).get("text", "")
+        if not text:
+            return None
+        return CompletionResponseChunk(
+            model=model,
+            choices=[ChunkChoice(index=0, delta=DeltaMessage(content=text))],
+        )
+
+    if event_type == "message-end":
+        delta = data.get("delta", {})
+        raw_finish = delta.get("finish_reason")
+        finish_reason = FinishReason(FINISH_REASON_MAP.get(raw_finish, "stop")) if raw_finish else None
+
+        usage_data = delta.get("usage", {})
+        billed = usage_data.get("billed_units", {})
+        tokens = usage_data.get("tokens", {})
+        prompt_tokens = billed.get("input_tokens") or tokens.get("input_tokens", 0)
+        completion_tokens = billed.get("output_tokens") or tokens.get("output_tokens", 0)
+
+        return CompletionResponseChunk(
+            model=model,
+            choices=[ChunkChoice(index=0, delta=DeltaMessage(), finish_reason=finish_reason)],
+            usage=Usage(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+            )
+            if (prompt_tokens or completion_tokens)
+            else None,
+        )
+
+    # content-start, content-end, tool-plan-delta, tool-call-start,
+    # tool-call-delta, tool-call-end, and any unrecognized event type.
+    return None

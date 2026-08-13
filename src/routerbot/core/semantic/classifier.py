@@ -82,6 +82,10 @@ class IntentClassifier:
         ],
     }
 
+    # Bounds the classification cache — without a limit, a long-running
+    # process classifying diverse prompts leaks memory indefinitely.
+    MAX_CACHE_SIZE: ClassVar[int] = 10_000
+
     def __init__(self, config: SemanticRoutingConfig) -> None:
         self._config = config
         self._cache: dict[str, str] = {}
@@ -116,6 +120,11 @@ class IntentClassifier:
         best = max(scores, key=lambda k: scores[k])
 
         if self._config.cache_classifications:
+            if len(self._cache) >= self.MAX_CACHE_SIZE:
+                # FIFO eviction: drop the oldest entry (dicts preserve
+                # insertion order) to make room for the new one.
+                oldest_key = next(iter(self._cache))
+                del self._cache[oldest_key]
             self._cache[cache_key] = best
 
         return best
@@ -254,6 +263,7 @@ class SemanticRouter:
         model: str,
         messages: list[dict[str, Any]] | None = None,
         prompt: str | None = None,
+        session_key: str | None = None,
     ) -> str:
         """Determine the best model for the request.
 
@@ -261,6 +271,10 @@ class SemanticRouter:
             model: The originally requested model name.
             messages: Chat messages (extracts last user message).
             prompt: Direct prompt text for completion requests.
+            session_key: Stable per-caller identifier (e.g. API key or user
+                id) used to make A/B test bucketing sticky — the same caller
+                gets the same variant every time. ``None`` (no auth context)
+                falls back to per-request random assignment.
 
         Returns:
             The model name to actually route to (may be the original).
@@ -280,7 +294,7 @@ class SemanticRouter:
             return pattern_model
 
         # 2. Check A/B tests for the requested model
-        ab_model = self._resolve_ab_test(model)
+        ab_model = self._resolve_ab_test(model, session_key)
         if ab_model and ab_model != model:
             logger.debug("A/B test → %s", ab_model)
             return ab_model
@@ -305,15 +319,22 @@ class SemanticRouter:
                 return rule.route_to
         return None
 
-    def _resolve_ab_test(self, model: str) -> str | None:
+    def _resolve_ab_test(self, model: str, session_key: str | None = None) -> str | None:
         """Apply A/B test traffic splitting for the model.
 
-        Uses deterministic random for consistency — the same request
-        within a session will always get the same variant.
+        When *session_key* is given, the split is a deterministic hash of
+        ``(session_key, test_name)`` so the same caller always lands in the
+        same variant. Without one (no auth context), falls back to
+        per-request random assignment.
         """
         for test in self._ab_tests.values():
             if model in (test.model_a, test.model_b):
-                if random.random() < test.traffic_split:  # noqa: S311
+                if session_key:
+                    digest = hashlib.sha256(f"{session_key}:{test.name}".encode()).hexdigest()
+                    fraction = int(digest, 16) / (2**256)
+                else:
+                    fraction = random.random()  # noqa: S311
+                if fraction < test.traffic_split:
                     return test.model_a
                 return test.model_b
         return None

@@ -22,11 +22,22 @@ import asyncio
 import enum
 import logging
 import time
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_uuid(value: str | None) -> uuid.UUID | None:
+    """Best-effort parse of an ID string into a UUID, or ``None``."""
+    if not value:
+        return None
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +315,42 @@ class ConsoleLogCallback(BaseCallback):
 
 
 # ---------------------------------------------------------------------------
+# Adapter: plugin CallbackHooks -> BaseCallback
+# ---------------------------------------------------------------------------
+
+
+class PluginCallbackAdapter(BaseCallback):
+    """Adapts a plugin :class:`~routerbot.core.plugins.hooks.CallbackHook`
+    (which takes plain ``dict`` payloads) to the :class:`BaseCallback`
+    interface so it can be registered on a :class:`CallbackManager`
+    alongside built-in callbacks.
+    """
+
+    def __init__(self, hook: Any, name: str) -> None:
+        self._hook = hook
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    async def on_request_start(self, data: RequestStartData) -> None:
+        import dataclasses
+
+        await self._hook.on_request_start(dataclasses.asdict(data))
+
+    async def on_request_end(self, data: RequestEndData) -> None:
+        import dataclasses
+
+        await self._hook.on_request_end(dataclasses.asdict(data))
+
+    async def on_request_error(self, data: RequestErrorData) -> None:
+        import dataclasses
+
+        await self._hook.on_error(dataclasses.asdict(data))
+
+
+# ---------------------------------------------------------------------------
 # Built-in: Spend log callback (writes to DB)
 # ---------------------------------------------------------------------------
 
@@ -332,6 +379,9 @@ class SpendLogCallback(BaseCallback):
             async with self._session_factory() as session:
                 repo = SpendRepository(session)
                 await repo.create(
+                    key_id=_parse_uuid(data.key_id),
+                    user_id=_parse_uuid(data.user_id),
+                    team_id=_parse_uuid(data.team_id),
                     model=data.model,
                     provider=data.provider,
                     request_id=data.request_id,

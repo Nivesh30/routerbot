@@ -72,6 +72,25 @@ async def get_config_summary(request: Request) -> JSONResponse:
     )
 
 
+def _rebuild_router(state: Any, new_config: Any) -> None:
+    """Rebuild ``state.router`` from the freshly-reloaded config.
+
+    Without this, a hot-reload updates ``state.config`` but leaves the
+    router's deployment registry, fallbacks, and retry/cooldown settings
+    frozen at whatever they were on startup.
+    """
+    from routerbot.router.router import build_router
+
+    old_router = getattr(state, "router", None)
+    state.router = build_router(new_config)
+    if old_router is not None:
+        # Close the old router's cached provider clients in the background —
+        # don't block the reload response on it.
+        import asyncio
+
+        asyncio.ensure_future(old_router.aclose())  # noqa: RUF006
+
+
 @router.post("/config/reload", summary="Trigger config hot-reload")
 async def reload_config(request: Request) -> JSONResponse:
     """Reload the configuration from disk without restarting the server.
@@ -115,6 +134,7 @@ async def reload_config(request: Request) -> JSONResponse:
         # Apply to state
         old_hash = compute_config_hash(state.config) if state.config else "none"
         state.config = new_config
+        _rebuild_router(state, new_config)
         new_hash = compute_config_hash(new_config)
 
         return JSONResponse(
@@ -130,6 +150,7 @@ async def reload_config(request: Request) -> JSONResponse:
     try:
         old_hash = compute_config_hash(state.config) if state.config else "none"
         new_config = await config_watcher.reload_now()
+        _rebuild_router(state, new_config)
         new_hash = compute_config_hash(new_config)
     except Exception as exc:
         logger.error("Config reload via watcher failed: %s", exc)

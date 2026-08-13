@@ -42,7 +42,5 @@ class UserRepository(BaseRepository[User]):
         return await self.update(user, is_active=False)
 
     async def increment_spend(self, user: User, amount: float) -> User:
-        """Add *amount* to the user's running spend total."""
-        user.spend += amount
-        await self._session.flush()
-        return user
+        """Atomically add *amount* to the user's running spend total."""
+        return await self.increment_field(user, "spend", amount)

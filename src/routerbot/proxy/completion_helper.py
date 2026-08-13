@@ -18,6 +18,27 @@ from routerbot.core.types import CompletionRequest
 if TYPE_CHECKING:
     from routerbot.core.config_models import RouterBotConfig
     from routerbot.providers.base import BaseProvider
+    from routerbot.router.router import Router
+
+
+def get_router(state: Any) -> Router:
+    """Return ``state.router``, lazily building one from ``state.config`` if unset.
+
+    ``state.router`` is normally built once at app startup (``proxy/app.py``),
+    but some test fixtures construct the app without running the startup
+    lifespan. Building lazily here — using the same
+    ``routerbot.router.router.build_router`` factory startup uses — means
+    routes work either way without every caller needing to know the
+    difference.
+    """
+    router = getattr(state, "router", None)
+    if router is None:
+        from routerbot.router.router import build_router
+
+        router = build_router(state.config if state else None)
+        if state is not None:
+            state.router = router
+    return router
 
 
 def get_provider_for_model(config: RouterBotConfig | None, model_name: str) -> BaseProvider:

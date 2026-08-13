@@ -174,6 +174,72 @@ async def batch_client() -> AsyncIterator[AsyncClient]:
         await _shutdown(test_app, state)
 
 
+@pytest_asyncio.fixture()
+async def rate_limited_client() -> AsyncIterator[AsyncClient]:
+    """Async test client with a very low global RPM limit."""
+    from routerbot.proxy.app import _shutdown, _startup
+
+    config = _make_config()
+    config.rate_limit = {"enabled": True, "global_rpm": 2}
+    test_app = create_app(config=config)
+    state = test_app.state.routerbot
+    mock_cls = _mock_provider_cls(chat_response=_make_completion_response())
+    with patch("routerbot.providers.registry.get_provider_class", return_value=mock_cls):
+        await _startup(test_app, state, config)
+        async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+            yield ac
+        await _shutdown(test_app, state)
+
+
+@pytest_asyncio.fixture()
+async def cache_client() -> AsyncIterator[AsyncClient]:
+    """Async test client with response caching enabled and a counting mock provider."""
+    from routerbot.core.config_models import RouterBotSettings
+    from routerbot.proxy.app import _shutdown, _startup
+
+    config = _make_config()
+    config.routerbot_settings = RouterBotSettings(cache=True, cache_params={"type": "memory"})
+    test_app = create_app(config=config)
+    state = test_app.state.routerbot
+
+    call_count = {"n": 0}
+
+    class CountingProvider:
+        def __init__(self, **kwargs: object) -> None:
+            pass
+
+        async def chat_completion(self, request: object) -> CompletionResponse:
+            call_count["n"] += 1
+            return _make_completion_response()
+
+        async def close(self) -> None:
+            pass
+
+    with patch("routerbot.providers.registry.get_provider_class", return_value=CountingProvider):
+        await _startup(test_app, state, config)
+        async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+            ac.call_count = call_count  # type: ignore[attr-defined]
+            yield ac
+        await _shutdown(test_app, state)
+
+
+@pytest_asyncio.fixture()
+async def guardrail_client() -> AsyncIterator[AsyncClient]:
+    """Async test client with a banned-keywords guardrail enabled."""
+    from routerbot.proxy.app import _shutdown, _startup
+
+    config = _make_config()
+    config.guardrails = {"enabled": True, "banned_keywords": {"keywords": ["forbidden-word"]}}
+    test_app = create_app(config=config)
+    state = test_app.state.routerbot
+    mock_cls = _mock_provider_cls(chat_response=_make_completion_response())
+    with patch("routerbot.providers.registry.get_provider_class", return_value=mock_cls):
+        await _startup(test_app, state, config)
+        async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+            yield ac
+        await _shutdown(test_app, state)
+
+
 # ---------------------------------------------------------------------------
 # Helper: mock provider class
 # ---------------------------------------------------------------------------
@@ -214,6 +280,9 @@ def _mock_provider_cls(
             from routerbot.core.types import AudioTranscriptionResponse
 
             return AudioTranscriptionResponse(text="Hello world")
+
+        async def close(self) -> None:
+            pass
 
     return MockProvider
 
@@ -286,6 +355,110 @@ async def test_chat_completions_propagates_request_id(client: AsyncClient) -> No
             headers={"X-Request-ID": "test-req-abc"},
         )
     assert resp.headers["x-request-id"] == "test-req-abc"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_writes_spend_log(batch_client: AsyncClient) -> None:
+    """A chat completion should result in a spend_logs row via callback dispatch.
+
+    Reuses ``batch_client`` since it already runs ``_startup`` (which wires
+    ``SpendLogCallback`` onto the callback manager whenever a DB is
+    available) with a mocked provider.
+    """
+    import uuid
+
+    from sqlalchemy import select
+
+    from routerbot.db.models import SpendLog
+    from routerbot.db.session import get_session_factory
+
+    # Unique per test run: the underlying sqlite file (database_url defaults
+    # to a real file, not :memory:) persists across test invocations, so a
+    # fixed request_id could collide with a row left by an earlier run.
+    request_id = f"spend-test-{uuid.uuid4().hex}"
+    resp = await batch_client.post(
+        "/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
+        headers={"X-Request-ID": request_id},
+    )
+    assert resp.status_code == 200
+
+    import asyncio
+
+    factory = get_session_factory()
+    row = None
+    for _ in range(50):
+        async with factory() as session:
+            result = await session.execute(select(SpendLog).where(SpendLog.request_id == request_id))
+            row = result.scalar_one_or_none()
+        if row is not None:
+            break
+        await asyncio.sleep(0.05)
+
+    assert row is not None
+    assert row.model == "gpt-4o"
+    assert row.tokens_prompt == 10
+    assert row.tokens_completion == 5
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_cache_hit_skips_provider(cache_client: AsyncClient) -> None:
+    """Identical requests should hit the cache — the provider is called once."""
+    body = {"model": "gpt-4o", "messages": [{"role": "user", "content": "cache me"}]}
+
+    r1 = await cache_client.post("/v1/chat/completions", json=body)
+    r2 = await cache_client.post("/v1/chat/completions", json=body)
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    assert cache_client.call_count["n"] == 1  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_cache_key_includes_seed(cache_client: AsyncClient) -> None:
+    """Requests differing only by seed must not share a cache entry."""
+    base = {"model": "gpt-4o", "messages": [{"role": "user", "content": "cache me"}]}
+
+    r1 = await cache_client.post("/v1/chat/completions", json={**base, "seed": 1})
+    r2 = await cache_client.post("/v1/chat/completions", json={**base, "seed": 2})
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    assert cache_client.call_count["n"] == 2  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_rate_limited(rate_limited_client: AsyncClient) -> None:
+    """Requests beyond the configured global RPM should return 429."""
+    body = {"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]}
+
+    r1 = await rate_limited_client.post("/v1/chat/completions", json=body)
+    r2 = await rate_limited_client.post("/v1/chat/completions", json=body)
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+
+    r3 = await rate_limited_client.post("/v1/chat/completions", json=body)
+    assert r3.status_code == 429
+    assert "retry-after" in r3.headers
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_blocked_by_guardrail(guardrail_client: AsyncClient) -> None:
+    """A request containing a banned keyword should be blocked with a 400."""
+    resp = await guardrail_client.post(
+        "/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": [{"role": "user", "content": "this has a forbidden-word in it"}]},
+    )
+    assert resp.status_code == 400
+    assert "error" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_allowed_without_banned_keyword(guardrail_client: AsyncClient) -> None:
+    """A request without the banned keyword should pass through normally."""
+    resp = await guardrail_client.post(
+        "/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hello there"}]},
+    )
+    assert resp.status_code == 200
 
 
 # ---------------------------------------------------------------------------

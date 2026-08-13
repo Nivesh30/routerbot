@@ -54,19 +54,24 @@ class Bulkhead:
             self._waiting += 1
 
         try:
-            if (
-                self.config.max_wait_seconds <= 0
-                and self._semaphore.locked()
-                and self._active >= self.config.max_concurrent
-            ):
-                async with self._lock:
-                    self._waiting -= 1
-                    self._total_rejected += 1
-                raise BulkheadFullError(self.provider)
-            await asyncio.wait_for(
-                self._semaphore.acquire(),
-                timeout=self.config.max_wait_seconds if self.config.max_wait_seconds > 0 else None,
-            )
+            if self.config.max_wait_seconds <= 0:
+                # Fail-fast: don't wait at all. asyncio.wait_for(..., timeout=0)
+                # is *not* equivalent to a non-blocking try-acquire — it
+                # reliably times out even when the semaphore is immediately
+                # available (the 0-timeout races the coroutine's first
+                # suspension point and always wins). Check availability
+                # synchronously instead; since Semaphore.acquire() on an
+                # available semaphore returns without an intervening await,
+                # there's no yield point between the check and the acquire
+                # for another coroutine to race in through.
+                if self._semaphore.locked():
+                    async with self._lock:
+                        self._waiting -= 1
+                        self._total_rejected += 1
+                    raise BulkheadFullError(self.provider)
+                await self._semaphore.acquire()
+            else:
+                await asyncio.wait_for(self._semaphore.acquire(), timeout=self.config.max_wait_seconds)
         except TimeoutError:
             async with self._lock:
                 self._waiting -= 1

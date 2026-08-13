@@ -64,7 +64,5 @@ class TeamRepository(BaseRepository[Team]):
         return result.scalar_one_or_none()
 
     async def increment_spend(self, team: Team, amount: float) -> Team:
-        """Add *amount* to the team's running spend total."""
-        team.spend += amount
-        await self._session.flush()
-        return team
+        """Atomically add *amount* to the team's running spend total."""
+        return await self.increment_field(team, "spend", amount)

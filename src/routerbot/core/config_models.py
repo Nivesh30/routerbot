@@ -212,5 +212,13 @@ class RouterBotConfig(BaseModel):
         default_factory=dict,
         description="Kubernetes operator configuration",
     )
+    guardrails: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Guardrail pipeline configuration (PII/secret detection, banned keywords, content moderation)",
+    )
+    rate_limit: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Rate limiting configuration (global/key/user/team/model RPM+TPM limits)",
+    )
 
     model_config = {"extra": "allow"}

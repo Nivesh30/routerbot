@@ -28,7 +28,7 @@ from routerbot.providers.cohere.config import (
     FINISH_REASON_MAP as COHERE_FINISH_REASON_MAP,
 )
 from routerbot.providers.cohere.provider import CohereProvider
-from routerbot.providers.cohere.transform import cohere_response_to_openai
+from routerbot.providers.cohere.transform import cohere_response_to_openai, parse_cohere_stream_event
 from routerbot.providers.deepseek.provider import DeepSeekProvider
 from routerbot.providers.groq.provider import GROQ_BASE_URL, GroqProvider
 from routerbot.providers.mistral.provider import MISTRAL_BASE_URL, MistralProvider
@@ -256,6 +256,49 @@ class TestCohereTransform:
         assert "command-r-plus" in COHERE_MODELS
 
 
+class TestParseCohereStreamEvent:
+    """Cohere v2 streaming emits its own event schema, not OpenAI chunks."""
+
+    def test_message_start_emits_role_delta(self):
+        event = {"type": "message-start", "delta": {"message": {"role": "assistant", "content": []}}}
+        chunk = parse_cohere_stream_event(event, "command-r-plus")
+        assert chunk is not None
+        assert chunk.choices[0].delta.role == "assistant"
+
+    def test_content_delta_emits_text(self):
+        event = {"type": "content-delta", "index": 0, "delta": {"message": {"content": {"text": "Hello"}}}}
+        chunk = parse_cohere_stream_event(event, "command-r-plus")
+        assert chunk is not None
+        assert chunk.choices[0].delta.content == "Hello"
+
+    def test_content_delta_empty_text_returns_none(self):
+        event = {"type": "content-delta", "index": 0, "delta": {"message": {"content": {"text": ""}}}}
+        assert parse_cohere_stream_event(event, "command-r-plus") is None
+
+    def test_content_start_and_end_return_none(self):
+        assert parse_cohere_stream_event({"type": "content-start", "index": 0}, "m") is None
+        assert parse_cohere_stream_event({"type": "content-end", "index": 0}, "m") is None
+
+    def test_message_end_emits_finish_reason_and_usage(self):
+        event = {
+            "type": "message-end",
+            "delta": {
+                "finish_reason": "COMPLETE",
+                "usage": {"billed_units": {"input_tokens": 6, "output_tokens": 8}},
+            },
+        }
+        chunk = parse_cohere_stream_event(event, "command-r-plus")
+        assert chunk is not None
+        assert chunk.choices[0].finish_reason == "stop"
+        assert chunk.usage is not None
+        assert chunk.usage.prompt_tokens == 6
+        assert chunk.usage.completion_tokens == 8
+
+    def test_unknown_event_type_returns_none(self):
+        assert parse_cohere_stream_event({"type": "tool-plan-delta"}, "m") is None
+        assert parse_cohere_stream_event({"type": "something-new"}, "m") is None
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Cohere Provider
 # ═══════════════════════════════════════════════════════════════════════════
@@ -312,6 +355,43 @@ class TestCohereProvider:
         with pytest.raises(AuthenticationError):
             await p.chat_completion(_make_request())
         await p.close()
+
+    @pytest.mark.asyncio
+    async def test_streaming_yields_real_cohere_events(self, respx_mock):
+        """End-to-end: real Cohere v2 SSE event stream parses into text deltas.
+
+        Regression test for the previous behavior, which assumed each SSE
+        line was already an OpenAI-format chunk (it isn't) and silently
+        yielded zero content on real Cohere streams.
+        """
+        events = [
+            {"type": "message-start", "delta": {"message": {"role": "assistant", "content": []}}},
+            {"type": "content-start", "index": 0, "delta": {"message": {"content": {"type": "text", "text": ""}}}},
+            {"type": "content-delta", "index": 0, "delta": {"message": {"content": {"text": "Hello"}}}},
+            {"type": "content-delta", "index": 0, "delta": {"message": {"content": {"text": " world"}}}},
+            {"type": "content-end", "index": 0},
+            {
+                "type": "message-end",
+                "delta": {
+                    "finish_reason": "COMPLETE",
+                    "usage": {"billed_units": {"input_tokens": 3, "output_tokens": 2}},
+                },
+            },
+        ]
+        sse_body = "".join(f"data: {json.dumps(e)}\n\n" for e in events) + "data: [DONE]\n\n"
+        respx_mock.post("https://mock.cohere.test/v2/chat").mock(
+            return_value=httpx.Response(200, content=sse_body, headers={"content-type": "text/event-stream"})
+        )
+
+        p = CohereProvider(api_key="co_test", api_base="https://mock.cohere.test/v2")
+        chunks = [c async for c in p.chat_completion_stream(_make_request(model="command-r-plus"))]
+        await p.close()
+
+        text = "".join(c.choices[0].delta.content or "" for c in chunks)
+        assert text == "Hello world"
+        assert chunks[-1].choices[0].finish_reason == "stop"
+        assert chunks[-1].usage is not None
+        assert chunks[-1].usage.prompt_tokens == 3
 
     @pytest.mark.asyncio
     async def test_rate_limit_error(self, respx_mock):

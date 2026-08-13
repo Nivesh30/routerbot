@@ -23,8 +23,13 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from fastapi import UploadFile
+
     from routerbot.core.config_models import RouterBotConfig
     from routerbot.core.types import (
+        AudioSpeechRequest,
+        AudioTranscriptionRequest,
+        AudioTranscriptionResponse,
         CompletionRequest,
         CompletionResponse,
         CompletionResponseChunk,
@@ -32,6 +37,8 @@ if TYPE_CHECKING:
         EmbeddingResponse,
         ImageRequest,
         ImageResponse,
+        RerankRequest,
+        RerankResponse,
     )
     from routerbot.router.strategies import Strategy
 
@@ -100,6 +107,29 @@ class Deployment:
 # ---------------------------------------------------------------------------
 
 
+def build_router(config: RouterBotConfig | None) -> Router:
+    """Construct a :class:`Router` using the settings from *config*.
+
+    Shared by app startup and config hot-reload so both paths build the
+    router identically from ``router_settings`` instead of Router's
+    hardcoded constructor defaults.
+    """
+    from routerbot.router.strategies import get_strategy
+
+    if config is None or config.router_settings is None:
+        return Router(config=config)
+
+    rs = config.router_settings
+    return Router(
+        config=config,
+        strategy=get_strategy(rs.routing_strategy),
+        max_retries=rs.num_retries,
+        retry_delay=rs.retry_delay,
+        allowed_fails=rs.allowed_fails,
+        cooldown_seconds=rs.cooldown_time,
+    )
+
+
 class Router:
     """Intelligent routing layer for LLM API requests.
 
@@ -145,6 +175,10 @@ class Router:
 
         # Registry: model_name → list of deployments
         self._deployments: dict[str, list[Deployment]] = {}
+
+        # Provider instances are expensive (own an httpx.AsyncClient) — cache
+        # one per deployment instead of building a fresh one per attempt.
+        self._provider_cache: dict[str, Any] = {}
 
         if config is not None:
             self._build_registry(config)
@@ -215,15 +249,32 @@ class Router:
     # ------------------------------------------------------------------
 
     def _make_provider(self, deployment: Deployment) -> Any:
-        """Instantiate the provider for a deployment."""
+        """Return the (cached) provider instance for a deployment.
+
+        Providers own an ``httpx.AsyncClient``, so they're built once per
+        deployment and reused across attempts/requests rather than
+        recreated (and leaked) on every call — see :meth:`aclose`.
+        """
+        cached = self._provider_cache.get(deployment.name)
+        if cached is not None:
+            return cached
+
         from routerbot.providers.registry import get_provider_class
 
         provider_cls = get_provider_class(deployment.provider_name)
-        return provider_cls(
+        provider = provider_cls(
             api_key=deployment.api_key,
             api_base=deployment.api_base,
             custom_headers=deployment.extra_headers,
         )
+        self._provider_cache[deployment.name] = provider
+        return provider
+
+    async def aclose(self) -> None:
+        """Close every cached provider's underlying HTTP client."""
+        for provider in self._provider_cache.values():
+            await provider.close()
+        self._provider_cache.clear()
 
     # ------------------------------------------------------------------
     # Dispatch helpers
@@ -347,7 +398,11 @@ class Router:
             async for chunk in provider.chat_completion_stream(request):
                 yield chunk
             self._cooldown.record_success(deployment.name)
-        except BaseException:
+        except Exception:
+            # Exception (not BaseException) — a client disconnect mid-stream
+            # raises asyncio.CancelledError, which shouldn't trip the
+            # circuit breaker for what is a client-side abort, not a
+            # provider failure.
             self._cooldown.record_failure(deployment.name)
             raise
         finally:
@@ -382,5 +437,51 @@ class Router:
 
         return cast(
             "ImageResponse",
+            await self._execute_with_retry(request.model, _call, request_id),
+        )
+
+    async def rerank(
+        self,
+        request: RerankRequest,
+        request_id: str = "unknown",
+    ) -> RerankResponse:
+        """Route a rerank request."""
+
+        async def _call(provider: Any) -> Any:
+            return await provider.rerank(request)
+
+        return cast(
+            "RerankResponse",
+            await self._execute_with_retry(request.model, _call, request_id),
+        )
+
+    async def audio_transcription(
+        self,
+        request: AudioTranscriptionRequest,
+        file: UploadFile,
+        request_id: str = "unknown",
+    ) -> AudioTranscriptionResponse:
+        """Route an audio transcription request."""
+
+        async def _call(provider: Any) -> Any:
+            return await provider.audio_transcription(request, file=file)
+
+        return cast(
+            "AudioTranscriptionResponse",
+            await self._execute_with_retry(request.model, _call, request_id),
+        )
+
+    async def audio_speech(
+        self,
+        request: AudioSpeechRequest,
+        request_id: str = "unknown",
+    ) -> bytes:
+        """Route a text-to-speech request."""
+
+        async def _call(provider: Any) -> Any:
+            return await provider.audio_speech(request)
+
+        return cast(
+            "bytes",
             await self._execute_with_retry(request.model, _call, request_id),
         )

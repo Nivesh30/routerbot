@@ -52,7 +52,7 @@ logger = get_logger(__name__)
 class AnthropicProvider(BaseProvider):
     """Provider for Anthropic's Claude models."""
 
-    PROVIDER_NAME = "anthropic"
+    provider_name: str = "anthropic"
     SUPPORTED_MODELS = CHAT_MODELS
 
     def __init__(
@@ -76,6 +76,21 @@ class AnthropicProvider(BaseProvider):
                 timeout=self._timeout,
             )
         return self._client
+
+    async def health_check(self) -> bool:
+        """Check if the Anthropic API is reachable.
+
+        Overrides the base implementation, which builds its client via
+        ``self.client`` (a generic ``Bearer`` Authorization header) — wrong
+        for Anthropic's ``x-api-key`` scheme, and would cache a
+        wrongly-authenticated client for subsequent real requests since
+        both properties only build ``self._client`` if it's ``None``.
+        """
+        try:
+            resp = await self._get_client().get("/v1/models")
+            return resp.status_code == 200
+        except httpx.HTTPError:
+            return False
 
     # ------------------------------------------------------------------
     # Chat completion
