@@ -539,9 +539,7 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         if cache_params.type.value == "redis":
             from routerbot.cache.redis import RedisCacheBackend
 
-            resolved_redis_url = (
-                cache_params.redis_url or cfg.general_settings.redis_url or "redis://localhost:6379/0"
-            )
+            resolved_redis_url = cache_params.redis_url or cfg.general_settings.redis_url or "redis://localhost:6379/0"
             backend = RedisCacheBackend(
                 redis_url=resolved_redis_url,
                 default_ttl=cache_params.ttl,
