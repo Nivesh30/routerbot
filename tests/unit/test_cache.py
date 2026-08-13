@@ -168,6 +168,27 @@ class TestBuildCacheKey:
         key2 = build_cache_key(model="gpt-4", messages=sample_messages, max_tokens=200)
         assert key1 != key2
 
+    def test_different_tenant_different_key(self, sample_messages: list[dict[str, Any]]) -> None:
+        """Two tenants must never collide on the same cache entry."""
+        key1 = build_cache_key(model="gpt-4", messages=sample_messages, tenant="team-a")
+        key2 = build_cache_key(model="gpt-4", messages=sample_messages, tenant="team-b")
+        no_tenant = build_cache_key(model="gpt-4", messages=sample_messages)
+        assert key1 != key2
+        assert key1 != no_tenant
+        assert key2 != no_tenant
+
+    def test_tenant_folded_into_namespace(self, sample_messages: list[dict[str, Any]]) -> None:
+        key = build_cache_key(model="gpt-4", messages=sample_messages, namespace="myns", tenant="team-a")
+        assert key.startswith("myns:team-a:cache:")
+
+    def test_different_extra_params_different_key(self, sample_messages: list[dict[str, Any]]) -> None:
+        """seed/frequency_penalty/etc. must be part of the key, not ignored."""
+        key1 = build_cache_key(model="gpt-4", messages=sample_messages, extra={"seed": 1})
+        key2 = build_cache_key(model="gpt-4", messages=sample_messages, extra={"seed": 2})
+        no_extra = build_cache_key(model="gpt-4", messages=sample_messages)
+        assert key1 != key2
+        assert key1 != no_extra
+
     def test_key_is_sha256(self, sample_messages: list[dict[str, Any]]) -> None:
         key = build_cache_key(model="gpt-4", messages=sample_messages)
         # namespace:cache:<64-char hex>

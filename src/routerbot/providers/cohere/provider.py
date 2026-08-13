@@ -28,7 +28,7 @@ from routerbot.core.types import (
 )
 from routerbot.providers.base import BaseProvider
 from routerbot.providers.cohere.config import COHERE_BASE_URL
-from routerbot.providers.cohere.transform import cohere_response_to_openai
+from routerbot.providers.cohere.transform import cohere_response_to_openai, parse_cohere_stream_event
 from routerbot.providers.registry import register_provider
 
 if TYPE_CHECKING:
@@ -118,7 +118,13 @@ class CohereProvider(BaseProvider):
         self,
         request: CompletionRequest,
     ) -> AsyncIterator[CompletionResponseChunk]:
-        """Stream via Cohere SSE, which is in OpenAI's SSE format for v2."""
+        """Stream via Cohere's v2 SSE event schema (not OpenAI-format chunks).
+
+        Each ``data:`` line is a JSON-encoded event with its own ``type``
+        (``message-start``, ``content-delta``, ``message-end``, etc.) —
+        see :func:`routerbot.providers.cohere.transform.parse_cohere_stream_event`.
+        """
+        import json
 
         payload = request.model_dump(exclude_none=True)
         payload["stream"] = True
@@ -135,10 +141,13 @@ class CohereProvider(BaseProvider):
                     if raw in ("[DONE]", ""):
                         break
                     try:
-                        chunk = CompletionResponseChunk.model_validate_json(raw)
-                        yield chunk
-                    except Exception:
+                        event = json.loads(raw)
+                    except json.JSONDecodeError:
                         logger.debug("Skipping unparseable Cohere SSE line: %s", raw[:200])
+                        continue
+                    chunk = parse_cohere_stream_event(event, request.model)
+                    if chunk is not None:
+                        yield chunk
         except httpx.TimeoutException as exc:
             raise ProviderError(message=str(exc), provider=self.provider_name, original_error=exc) from exc
         except httpx.HTTPError as exc:

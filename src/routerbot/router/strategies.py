@@ -124,6 +124,12 @@ def get_strategy(name: str) -> Strategy:
         "latency-based": LatencyBasedStrategy(),
         "cost-based": CostBasedStrategy(),
         "weighted": WeightedStrategy(),
+        # Aliases matching routerbot.core.config_models.RoutingStrategy's
+        # values, which don't otherwise line up with the names above.
+        "weighted-round-robin": WeightedStrategy(),
+        # WeightedStrategy with all-equal deployment weights (the default)
+        # degenerates to uniform random selection.
+        "random": WeightedStrategy(),
     }
     if name not in strategies:
         valid = ", ".join(sorted(strategies.keys()))

@@ -54,6 +54,10 @@ class MCPClient:
         self._process: asyncio.subprocess.Process | None = None
         self._initialized = False
         self._request_id = 0
+        # STDIO is a single pipe with no request-id correlation on read —
+        # serialize access so concurrent callers can't receive each other's
+        # responses (see _send_stdio_request).
+        self._stdio_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     # Properties
@@ -374,25 +378,31 @@ class MCPClient:
         return data
 
     async def _send_stdio_request(self, request: dict[str, Any]) -> dict[str, Any]:
-        """Send a JSON-RPC request over STDIO."""
+        """Send a JSON-RPC request over STDIO.
+
+        The pipe carries one response per write with no id correlation on
+        read, so concurrent calls must be serialized — otherwise one
+        caller's read can consume another caller's response.
+        """
         if self._process is None or self._process.stdin is None or self._process.stdout is None:
             msg = "STDIO process not initialized"
             raise MCPClientError(msg)
 
-        # Write request
-        payload = json.dumps(request) + "\n"
-        self._process.stdin.write(payload.encode())
-        await self._process.stdin.drain()
+        async with self._stdio_lock:
+            # Write request
+            payload = json.dumps(request) + "\n"
+            self._process.stdin.write(payload.encode())
+            await self._process.stdin.drain()
 
-        # Read response
-        try:
-            line = await asyncio.wait_for(
-                self._process.stdout.readline(),
-                timeout=self._config.timeout,
-            )
-        except TimeoutError as exc:
-            msg = f"STDIO timeout from MCP server '{self.server_name}'"
-            raise MCPClientError(msg) from exc
+            # Read response
+            try:
+                line = await asyncio.wait_for(
+                    self._process.stdout.readline(),
+                    timeout=self._config.timeout,
+                )
+            except TimeoutError as exc:
+                msg = f"STDIO timeout from MCP server '{self.server_name}'"
+                raise MCPClientError(msg) from exc
 
         if not line:
             msg = f"STDIO EOF from MCP server '{self.server_name}'"

@@ -40,6 +40,12 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
+# Copy Alembic migration scaffolding — `alembic upgrade head` is the
+# supported way to apply schema changes in production (see docs/CONTAINER.md);
+# the app's own startup still falls back to create_all for local dev only.
+COPY alembic.ini .
+COPY alembic/ ./alembic/
+
 # Install Python dependencies (proxy extra includes uvicorn, sqlalchemy, aiosqlite)
 RUN uv pip install --system --no-cache ".[proxy]"
 

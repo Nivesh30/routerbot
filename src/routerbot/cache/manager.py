@@ -80,6 +80,8 @@ class ResponseCacheManager:
         tools: list[dict[str, Any]] | None = None,
         stream: bool = False,
         cache_control: str | None = None,
+        tenant: str | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> CacheEntry | None:
         """Check the cache for a matching response.
 
@@ -106,6 +108,8 @@ class ResponseCacheManager:
             max_tokens=max_tokens,
             tools=tools,
             namespace=self._namespace,
+            tenant=tenant,
+            extra=extra,
         )
 
         entry = await self._backend.get(key)
@@ -131,6 +135,8 @@ class ResponseCacheManager:
         tools: list[dict[str, Any]] | None = None,
         ttl: int | None = None,
         metadata: dict[str, Any] | None = None,
+        tenant: str | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Store a response in the cache.
 
@@ -146,6 +152,12 @@ class ResponseCacheManager:
             Override TTL.  Falls back to the manager's default.
         metadata:
             Extra metadata to store with the entry (e.g. usage info).
+        tenant:
+            Isolates the cache entry to a specific team/key so different
+            tenants never share a response for the same prompt.
+        extra:
+            Additional sampling params (seed, frequency_penalty, etc.)
+            that affect the response and must be part of the cache key.
         """
         if not self._enabled:
             return
@@ -158,6 +170,8 @@ class ResponseCacheManager:
             max_tokens=max_tokens,
             tools=tools,
             namespace=self._namespace,
+            tenant=tenant,
+            extra=extra,
         )
 
         entry = CacheEntry(

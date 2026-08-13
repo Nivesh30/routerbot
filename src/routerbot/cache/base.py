@@ -97,12 +97,17 @@ def build_cache_key(
     max_tokens: int | None = None,
     tools: list[dict[str, Any]] | None = None,
     namespace: str = "routerbot",
+    tenant: str | None = None,
     extra: dict[str, Any] | None = None,
 ) -> str:
     """Build a deterministic cache key from request parameters.
 
     Parameters are sorted and hashed so that identical requests always
     produce the same key regardless of dict ordering.
+
+    ``tenant`` (typically a team or API key id) is folded into the
+    namespace so two tenants sending an identical prompt never collide on
+    the same cache entry.
     """
     key_parts: dict[str, Any] = {
         "model": model,
@@ -121,4 +126,5 @@ def build_cache_key(
 
     serialised = json.dumps(key_parts, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(serialised.encode()).hexdigest()
-    return f"{namespace}:cache:{digest}"
+    scoped_namespace = f"{namespace}:{tenant}" if tenant else namespace
+    return f"{scoped_namespace}:cache:{digest}"

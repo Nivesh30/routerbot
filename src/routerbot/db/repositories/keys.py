@@ -50,7 +50,5 @@ class KeyRepository(BaseRepository[VirtualKey]):
         return await self.update(key, is_active=False)
 
     async def increment_spend(self, key: VirtualKey, amount: float) -> VirtualKey:
-        """Add *amount* to the key's running spend total."""
-        key.spend += amount
-        await self._session.flush()
-        return key
+        """Atomically add *amount* to the key's running spend total."""
+        return await self.increment_field(key, "spend", amount)

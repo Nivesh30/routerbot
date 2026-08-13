@@ -405,6 +405,43 @@ class TestSemanticRouterABTests:
         assert results == {"gpt-4o", "claude-3-opus"}
 
     @pytest.mark.asyncio
+    async def test_ab_test_sticky_per_session_key(self) -> None:
+        """The same session_key must always land in the same variant."""
+        router = _make_router(
+            ab_tests=[
+                ABTestConfig(name="t1", model_a="gpt-4o", model_b="claude-3-opus"),
+            ],
+        )
+        results = {
+            await router.route(
+                "gpt-4o",
+                messages=[{"role": "user", "content": "hello world test abc"}],
+                session_key="user-42",
+            )
+            for _ in range(20)
+        }
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_ab_test_different_session_keys_can_differ(self) -> None:
+        """Different session_keys are independently (deterministically) bucketed."""
+        router = _make_router(
+            ab_tests=[
+                ABTestConfig(name="t1", model_a="gpt-4o", model_b="claude-3-opus"),
+            ],
+        )
+        variants = set()
+        for i in range(50):
+            result = await router.route(
+                "gpt-4o",
+                messages=[{"role": "user", "content": "hello world test abc"}],
+                session_key=f"user-{i}",
+            )
+            variants.add(result)
+        # With 50 distinct keys and a 50/50 split, both variants should appear.
+        assert variants == {"gpt-4o", "claude-3-opus"}
+
+    @pytest.mark.asyncio
     async def test_ab_test_traffic_split_100_percent(self) -> None:
         router = _make_router(
             ab_tests=[

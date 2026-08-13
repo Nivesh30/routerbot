@@ -180,6 +180,13 @@ def create_app(config: RouterBotConfig | None = None) -> FastAPI:
         trust_proxy_headers=trust_proxy_headers,
     )
 
+    # Rate limiting (reads request.state.auth_context, so it must be more
+    # "inner" than AuthMiddleware — registered before it here, since the
+    # middleware most-recently registered wraps outermost and runs first).
+    from routerbot.proxy.middleware.rate_limit_mw import RateLimitMiddleware
+
+    app.add_middleware(RateLimitMiddleware)
+
     # Authentication (resolves AuthContext from Bearer tokens / SSO cookies)
     from routerbot.proxy.middleware.auth import AuthMiddleware
 
@@ -288,9 +295,9 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
             logger.warning("Redis connection failed: %s", exc)
 
     # Initialise the router layer
-    from routerbot.router.router import Router
+    from routerbot.router.router import build_router
 
-    state.router = Router(config=state.config)
+    state.router = build_router(state.config)
     logger.info("Router initialised with %d model(s)", len(state.router.list_models()))
 
     # Initialise MCP gateway (if configured)
@@ -522,6 +529,142 @@ async def _startup(app: FastAPI, state: AppState, config: RouterBotConfig | None
         state.k8s_health_manager = HealthManager()  # type: ignore[attr-defined]
         logger.info("Kubernetes Operator enabled")
 
+    # -- Response caching ---------------------------------------------------------
+    rbs = getattr(state.config, "routerbot_settings", None)
+    if rbs and rbs.cache:
+        from routerbot.cache.manager import ResponseCacheManager
+
+        cache_params = rbs.cache_params
+        backend: Any
+        if cache_params.type.value == "redis":
+            from routerbot.cache.redis import RedisCacheBackend
+
+            resolved_redis_url = cache_params.redis_url or cfg.general_settings.redis_url or "redis://localhost:6379/0"
+            backend = RedisCacheBackend(
+                redis_url=resolved_redis_url,
+                default_ttl=cache_params.ttl,
+                namespace=cache_params.namespace,
+            )
+        else:
+            from routerbot.cache.memory import InMemoryCacheBackend
+
+            backend = InMemoryCacheBackend(
+                max_size=cache_params.max_memory_items,
+                default_ttl=cache_params.ttl,
+                namespace=cache_params.namespace,
+            )
+
+        state.cache_manager = ResponseCacheManager(  # type: ignore[attr-defined]
+            backend,
+            default_ttl=cache_params.ttl,
+            namespace=cache_params.namespace,
+        )
+        logger.info("Response caching enabled (backend=%s)", cache_params.type.value)
+
+    # -- Callback dispatch (spend logging, plugin callback hooks, etc.) ----------
+    from routerbot.observability.callbacks import (
+        CallbackManager,
+        ConsoleLogCallback,
+        PluginCallbackAdapter,
+        SpendLogCallback,
+    )
+
+    callback_manager = CallbackManager()
+
+    if getattr(state, "db_engine", None) is not None:
+        from routerbot.db.session import get_session_factory
+
+        callback_manager.register(SpendLogCallback(get_session_factory()))
+
+    requested_callbacks = getattr(state.config, "routerbot_settings", None)
+    requested_callbacks = requested_callbacks.callbacks if requested_callbacks else []
+    for name in requested_callbacks:
+        if name == "console":
+            callback_manager.register(ConsoleLogCallback())
+        elif name == "prometheus":
+            from routerbot.observability.prometheus import PrometheusCallback
+
+            callback_manager.register(PrometheusCallback())
+        elif name == "opentelemetry":
+            from routerbot.observability.opentelemetry import OpenTelemetryCallback
+
+            callback_manager.register(OpenTelemetryCallback())
+        elif name in ("langfuse", "webhook"):
+            logger.warning(
+                "Callback '%s' requested but has no config section wired up yet — skipping.",
+                name,
+            )
+        else:
+            logger.warning("Unknown callback '%s' in routerbot_settings.callbacks — skipping.", name)
+
+    plugin_manager = getattr(state, "plugin_manager", None)
+    if plugin_manager is not None:
+        from routerbot.core.plugins.models import PluginType
+
+        for hook in plugin_manager.registry.get_hooks_by_type(PluginType.CALLBACK):
+            callback_manager.register(PluginCallbackAdapter(hook, name=f"plugin:{hook.__class__.__name__}"))
+
+    state.callback_manager = callback_manager  # type: ignore[attr-defined]
+    logger.info("Callback dispatch enabled: %s", callback_manager.registered)
+
+    # -- Rate limiting -----------------------------------------------------------
+    from routerbot.proxy.middleware.rate_limit import RateLimitConfig, RateLimitSettings
+
+    rate_limit_raw = getattr(state.config, "rate_limit", None) or {}
+    rate_limit_cfg = RateLimitSettings(**rate_limit_raw) if rate_limit_raw else RateLimitSettings()
+
+    if rate_limit_cfg.enabled:
+        from routerbot.proxy.middleware.rate_limit import InMemoryRateLimiter
+
+        state.rate_limiter = InMemoryRateLimiter(  # type: ignore[attr-defined]
+            global_config=RateLimitConfig(rpm=rate_limit_cfg.global_rpm, tpm=rate_limit_cfg.global_tpm),
+            default_key_config=RateLimitConfig(rpm=rate_limit_cfg.default_key_rpm, tpm=rate_limit_cfg.default_key_tpm),
+        )
+        logger.info(
+            "Rate limiting enabled (global_rpm=%s, default_key_rpm=%s)",
+            rate_limit_cfg.global_rpm,
+            rate_limit_cfg.default_key_rpm,
+        )
+
+    # -- Guardrails ------------------------------------------------------------
+    from routerbot.proxy.guardrails.models import GuardrailsConfig
+
+    guardrails_raw = getattr(state.config, "guardrails", None) or {}
+    guardrails_cfg = GuardrailsConfig(**guardrails_raw) if guardrails_raw else GuardrailsConfig()
+
+    if guardrails_cfg.enabled:
+        from routerbot.proxy.guardrails.banned_keywords import BannedKeywordsGuardrail
+        from routerbot.proxy.guardrails.content_moderation import (
+            ContentModerationGuardrail,
+            KeywordModerationBackend,
+            OpenAIModerationBackend,
+        )
+        from routerbot.proxy.guardrails.manager import GuardrailManager
+        from routerbot.proxy.guardrails.pii_detection import PIIDetectionGuardrail
+        from routerbot.proxy.guardrails.secret_detection import SecretDetectionGuardrail
+
+        guardrail_manager = GuardrailManager()
+
+        if guardrails_cfg.pii_detection is not None:
+            guardrail_manager.register(PIIDetectionGuardrail(**guardrails_cfg.pii_detection))
+        if guardrails_cfg.secret_detection is not None:
+            guardrail_manager.register(SecretDetectionGuardrail(**guardrails_cfg.secret_detection))
+        if guardrails_cfg.banned_keywords is not None:
+            guardrail_manager.register(BannedKeywordsGuardrail(**guardrails_cfg.banned_keywords))
+        if guardrails_cfg.content_moderation is not None:
+            cm_cfg = dict(guardrails_cfg.content_moderation)
+            backend_type = cm_cfg.pop("backend", "keyword")
+            backend_kwargs = cm_cfg.pop("backend_config", {})
+            backend = (
+                OpenAIModerationBackend(**backend_kwargs)
+                if backend_type == "openai"
+                else KeywordModerationBackend(**backend_kwargs)
+            )
+            guardrail_manager.register(ContentModerationGuardrail(backend=backend, **cm_cfg))
+
+        state.guardrail_manager = guardrail_manager  # type: ignore[attr-defined]
+        logger.info("Guardrails enabled: %s", guardrail_manager.registered)
+
     app.state.routerbot = state
     logger.info("RouterBot ready ✓")
 
@@ -554,6 +697,11 @@ async def _shutdown(app: FastAPI, state: AppState) -> None:
     worker_pool = getattr(state, "worker_pool", None)
     if worker_pool is not None:
         await worker_pool.stop()
+
+    # Close cached provider HTTP clients held by the router
+    router = getattr(state, "router", None)
+    if router is not None:
+        await router.aclose()
 
     # Close any open Redis connections
     if state.redis is not None:

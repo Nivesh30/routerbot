@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from sqlalchemy import select
+from sqlalchemy import update as sa_update
 
 from routerbot.db.models import Base
 
@@ -91,3 +92,19 @@ class BaseRepository(Generic[T]):
         """Hard-delete an entity from the database."""
         await self._session.delete(entity)
         await self._session.flush()
+
+    async def increment_field(self, entity: T, field: str, amount: float) -> T:
+        """Atomically increment a numeric column via ``UPDATE ... SET col = col + :amount``.
+
+        Avoids the read-modify-write race of ``entity.<field> += amount``,
+        which under concurrent requests against the same row can lose
+        updates (last writer wins on the in-memory value instead of the
+        database's current value).
+        """
+        column = getattr(self._model, field)
+        pk_column = getattr(self._model, "id")  # noqa: B009 - T is generically typed, no static `id` attribute
+        entity_id = getattr(entity, "id")  # noqa: B009
+        stmt = sa_update(self._model).where(pk_column == entity_id).values(**{field: column + amount})
+        await self._session.execute(stmt)
+        await self._session.refresh(entity)
+        return entity

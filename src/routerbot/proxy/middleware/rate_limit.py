@@ -28,7 +28,19 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from pydantic import BaseModel, Field
+
 logger = logging.getLogger(__name__)
+
+
+class RateLimitSettings(BaseModel):
+    """Top-level rate limiting configuration (``general_settings.rate_limit`` in YAML)."""
+
+    enabled: bool = Field(default=False)
+    global_rpm: int | None = Field(default=None)
+    global_tpm: int | None = Field(default=None)
+    default_key_rpm: int | None = Field(default=None)
+    default_key_tpm: int | None = Field(default=None)
 
 
 # ---------------------------------------------------------------------------
